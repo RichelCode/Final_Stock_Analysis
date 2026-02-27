@@ -1,0 +1,14 @@
+.Trash-0/
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+.venv/
+*.ipynb_checkpoints/
+.Trash-0/
+.venv/
+.venv/
+.Trash-0/
+.ipynb_checkpoints/
