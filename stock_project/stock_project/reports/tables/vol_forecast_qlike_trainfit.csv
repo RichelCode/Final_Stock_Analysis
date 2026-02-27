@@ -1,0 +1,7 @@
+split,model,n_obs,QLIKE_mean,QLIKE_median
+test,garch11_t,0,,
+test,gjr11_t,0,,
+test,egarch11_t,0,,
+val,garch11_t,0,,
+val,gjr11_t,0,,
+val,egarch11_t,0,,

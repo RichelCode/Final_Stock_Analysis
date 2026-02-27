@@ -1,0 +1,24 @@
+feature_name,role,definition
+Date,identifier,Feature date t (information up to end of day t).
+Ticker,identifier,Asset identifier (stock symbol).
+ret,feature,Log return on date t: log(P_t) - log(P_{t-1}).
+target_ret,target,Next-day log return to predict: log(P_{t+1}) - log(P_t).
+target_date,identifier,Date corresponding to target_ret (t+1).
+mkt_ret_lag1,feature,SPY market log return at t-1.
+vix_level_lag1,feature,VIX level (close) at t-1.
+vix_ret_lag1,feature,VIX log return at t-1.
+DFF_lag1,feature,Effective Fed Funds Rate at t-1 (forward-filled to trading days).
+DGS10_lag1,feature,10-year Treasury yield at t-1 (forward-filled).
+SP500_lag1,feature,"S&P500 index level at t-1 (from FRED, forward-filled)."
+sp500_ret_lag1,feature,Log return of FRED SP500 level at t-1.
+DFF_diff_lag1,feature,Daily change in DFF at t-1.
+DGS10_diff_lag1,feature,Daily change in DGS10 at t-1.
+ret_lag1,feature,Stock return at t-1.
+ret_lag2,feature,Stock return at t-2.
+ret_lag3,feature,Stock return at t-3.
+ret_lag5,feature,Stock return at t-5.
+ret_lag10,feature,Stock return at t-10.
+ret_vol5,feature,Rolling std of returns over last 5 days ending at t.
+ret_vol10,feature,Rolling std of returns over last 10 days ending at t.
+ret_vol20,feature,Rolling std of returns over last 20 days ending at t.
+split,identifier,Train/val/test split label based on target_date.
