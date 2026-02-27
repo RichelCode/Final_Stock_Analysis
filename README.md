@@ -231,11 +231,23 @@ Optional statistical comparisons may include Diebold–Mariano tests and regime-
 ## Project Roadmap
 
 Phase 1 — Data engineering and panel construction
+
+
 Phase 2 — GARCH family volatility modeling
+
+
 Phase 3 — Deep learning baselines (GRU/LSTM)
+
+
 Phase 4 — Hybrid GARCH–RNN models
+
+
 Phase 5 — Hierarchical Bayesian partial pooling
+
+
 Phase 6 — Walk-forward evaluation and comparative analysis
+
+
 Phase 7 — Paper drafting and reproducibility validation
 
 ---
