@@ -1,0 +1,4 @@
+model,split,n,avg_logscore,coverage_90,sigma_scale_s
+bayes_hier_partial_pooling,train,6024,2.635860758187006,0.924800796812749,1.048501318670443
+bayes_hier_partial_pooling,val,6048,2.262959627262006,0.9031084656084656,
+bayes_hier_partial_pooling,test,6008,2.2330239334080813,0.9024633821571239,
