@@ -1,0 +1,2 @@
+model,wf_months,wf_RMSE_mean,wf_RMSE_std,wf_OOSR2_mean
+ridge_walkforward_monthly,36.0,0.0243484933136195,0.0055268832457117,-0.0133661661513907
