@@ -1,0 +1,2 @@
+model,RMSE,avg_logscore,coverage_90
+bayes_hier_partial_pooling,0.0269246449596682,2.2330239334080813,0.902463382157124
