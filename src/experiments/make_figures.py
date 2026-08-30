@@ -233,36 +233,38 @@ def fig4_shrinkage():
 
 # ---------------------------------------------------------------- fig 5
 def fig5_decomposition():
-    comp = pd.read_csv(TAB / "v2_probabilistic_comparison_t_val_iqr.csv").set_index("model")
-    steps = [
-        ("Constant variance\n(Gaussian)", "baseline_gaussian", PINK),
-        ("+ GARCH scale\n(zero mean)", "baseline_garch", VERM),
-        ("+ conditional mean\n(ridge)", "ridge_garch", GREEN),
-        ("+ t tails and\ncalibration", "bayes_hier_horseshoe", BLUE),
-    ]
-    vals = [comp.loc[k, "logscore"] for _, k, _ in steps]
+    levels = pd.read_csv(TAB / "v2_decomposition_levels.csv")
+    steps = pd.read_csv(TAB / "v2_decomposition_steps.csv")
 
-    fig, ax = plt.subplots(figsize=(5.4, 3.3))
-    x = np.arange(len(steps))
-    ax.bar(x, vals, color=[c for _, _, c in steps], width=0.62, zorder=3)
-    ax.set_xticks(x, [lbl for lbl, _, _ in steps])
-    ax.set_ylim(2.15, max(vals) + 0.075)
+    labels = ["Zero mean,\nconstant variance", "+ GARCH\nvariance",
+              "+ conditional\nmean (ridge)", "+ t tails and\ncalibration"]
+    colors = [PINK, VERM, GREEN, BLUE]
+    vals = levels["logscore"].to_numpy()
+
+    fig, ax = plt.subplots(figsize=(5.6, 3.4))
+    x = np.arange(len(vals))
+    ax.bar(x, vals, color=colors, width=0.62, zorder=3)
+    ax.set_xticks(x, labels)
+    ax.set_ylim(2.15, vals.max() + 0.085)
     ax.set_ylabel("mean log predictive density")
     ax.set_title("Where the probabilistic gain comes from", loc="left")
 
-    # Annotate each increment with its significance.
-    notes = ["", "+0.153\np < 0.00001", "+0.002\np = 0.06", "+0.126\np < 0.00001"]
-    for xi, v, note in zip(x, vals, notes):
-        ax.text(xi, v + 0.004, f"{v:.3f}", ha="center", fontsize=7.5, color=INK)
-        if note:
-            ax.annotate("", xy=(xi - 0.08, v), xytext=(xi - 0.92, vals[xi - 1]),
-                        arrowprops=dict(arrowstyle="->", color=MUTED, lw=0.8,
-                                        shrinkA=2, shrinkB=2))
-            # Stagger the labels: consecutive increments would otherwise sit at
-            # nearly the same height and overlap.
-            lift = 0.030 if xi % 2 else 0.052
-            ax.text(xi - 0.5, max(v, vals[xi - 1]) + lift, note, ha="center",
-                    fontsize=6.5, color=MUTED)
+    for xi, v in zip(x, vals):
+        ax.text(xi, v + 0.005, f"{v:.3f}", ha="center", fontsize=7.5, color=INK)
+
+    # Each increment is labelled with its share of the total gain as well as its
+    # p-value: at n = 6008 the test detects differences far too small to act on,
+    # so significance and relevance have to be read separately.
+    for i, r in steps.iterrows():
+        xi = i + 1
+        ax.annotate("", xy=(xi - 0.08, vals[xi]), xytext=(xi - 0.92, vals[xi - 1]),
+                    arrowprops=dict(arrowstyle="->", color=MUTED, lw=0.8,
+                                    shrinkA=2, shrinkB=2))
+        pstr = "p < 0.00001" if r["p_value"] < 1e-5 else f"p = {r['p_value']:.3f}"
+        lift = 0.030 if xi % 2 else 0.058
+        ax.text(xi - 0.5, max(vals[xi], vals[xi - 1]) + lift,
+                f"{r['gain_nats']:+.3f} nats\n{r['share_of_total_pct']:.1f}% of total\n{pstr}",
+                ha="center", fontsize=6.4, color=MUTED, linespacing=1.35)
     style(ax)
     fig.tight_layout()
     save(fig, "fig5_decomposition")

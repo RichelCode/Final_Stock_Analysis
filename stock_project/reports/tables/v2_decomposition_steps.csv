@@ -1,0 +1,4 @@
+from,to,gain_nats,share_of_total_pct,DM_stat,p_value,significant_5pct
+"1. zero mean, constant variance","2. zero mean, GARCH variance",0.1527918343264152,54.40567793385642,-5.523560809389487,3.461382824809789e-08,True
+"2. zero mean, GARCH variance","3. ridge mean, GARCH variance",0.0019641551804028268,0.6993907405340791,-2.1800853897767856,0.029289822091015605,True
+"3. ridge mean, GARCH variance","4. Bayesian mean, t tails, calibrated",0.12608204087701713,44.8949313256095,-5.5098401912159884,3.7408473207989346e-08,True
