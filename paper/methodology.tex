@@ -1,0 +1,233 @@
+% !TEX root = main.tex
+
+\section{Data and Methodology}
+\label{sec:methodology}
+
+\subsection{Sample and splits}
+\label{sec:data}
+
+The sample is a balanced daily panel of eight large-capitalisation United States
+technology equities---AAPL, MSFT, AMZN, GOOGL, META, NVDA, TSLA and ORCL---from
+2 March 2016 to 29 December 2025. Adjusted closing prices are obtained from
+Yahoo Finance and macro-financial series from the Federal Reserve Economic Data
+service: the effective federal funds rate (DFF), the ten-year Treasury constant
+maturity yield (DGS10), the S\&P~500 index (SP500) and the CBOE volatility index
+(VIX). The market proxy is the SPY exchange-traded fund.
+
+The forecast target is the one-day-ahead log return. For ticker $i$, a panel row
+is keyed by date $t$ and its target is
+\begin{equation}
+  y_{i,t} \;=\; \log P_{i,t+1} - \log P_{i,t},
+  \label{eq:target}
+\end{equation}
+realised on $t+1$. Every predictor is observable at the close of $t$, so no
+input uses information from the period being forecast.
+
+The panel is divided chronologically into three blocks, with no shuffling at any
+stage:
+
+\begin{center}
+\begin{tabular}{llr}
+\toprule
+Split & Dates & Rows \\
+\midrule
+Training   & 2016-03-02 to 2019-12-30 & 7\,720 \\
+Validation & 2019-12-31 to 2022-12-29 & 6\,048 \\
+Test       & 2022-12-30 to 2025-12-29 & 6\,008 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The split is deliberately demanding. The training block spans a low-rate,
+low-volatility regime; the validation block contains the COVID-19 dislocation;
+and the test block spans the 2022--2023 tightening cycle and its aftermath. Any
+relation that survives is required to survive a change in monetary regime.
+
+\subsection{Feature dictionary and stationarity}
+\label{sec:features}
+
+Model inputs are declared explicitly rather than inferred from column type. This
+is a substantive design choice, not bookkeeping. Selecting every numeric column
+admits level series---an index level, a policy rate---whose mean moves
+permanently between the training and test blocks. Standardised on training
+moments and applied to the test block, such a series arrives at a magnitude the
+estimator has never seen, and any model with an unbounded linear output
+extrapolates along it. Section~\ref{sec:extrapolation} reports the consequences
+directly.
+
+Membership is therefore fixed in advance, and each candidate is classified by an
+augmented Dickey--Fuller test. Three series are non-stationary over the sample:
+the S\&P~500 level ($p=0.99$), the effective federal funds rate ($p=0.83$) and
+the ten-year yield ($p=0.80$). All three are excluded and replaced by their
+first differences or by a stationary counterpart. The retained set comprises
+fourteen predictors: six own-return lags, three trailing realised volatilities,
+the market return, the log VIX and its change, and the daily changes in the
+federal funds rate and the ten-year yield. Hybrid specifications add one further
+input, the GARCH conditional standard deviation of
+Section~\ref{sec:garch}, so base and hybrid models differ by exactly one column.
+Table~\ref{tab:features} lists every candidate, retained or excluded, with the
+reason for exclusion.
+
+Two redundancies are also removed. One column duplicated another exactly, and
+the S\&P~500 return correlated $0.9985$ with the market proxy return; retaining
+both would inflate collinearity and render the Bayesian coefficient posteriors
+uninterpretable.
+
+\subsection{Evaluation protocols}
+\label{sec:protocols}
+
+Two protocols are used throughout, and the difference between them is itself a
+result.
+
+Under the \emph{fixed-origin} protocol a model is estimated once on the training
+block, and the fitted model together with its feature scaler is frozen and
+applied to the whole test block. This is the conventional design and is
+appropriate when predictors are stationary.
+
+Under the \emph{expanding-window} protocol the model walks forward month by
+month. At each fold it is refitted on every observation whose target date falls
+strictly before the fold start, and it forecasts that month only; the scaler is
+refitted inside the fold along with the model. This is what a forecaster could
+have executed in real time.
+
+Both protocols score the identical 6\,008 test observations, so their metrics
+are directly comparable, and across all 36 folds no training observation reaches
+into the month being scored.
+
+\subsection{Conditional volatility}
+\label{sec:garch}
+
+Three conditional volatility specifications are estimated per ticker on returns
+in percent: GARCH(1,1), GJR-GARCH(1,1) and EGARCH(1,1), each with Student-$t$
+innovations. Parameters are estimated on the training block alone. They are then
+held fixed and the recursion is filtered forward through the validation and test
+blocks, so the stored quantity is a genuine one-step-ahead forecast
+$\sigma_{i,t+1\mid t}$ that uses only information through $t$. The value recorded
+at date $t$ therefore forecasts the same period as the target
+in~\eqref{eq:target}.
+
+Every fit is checked for optimiser convergence, finite parameters and a
+conditional standard deviation within a plausible range before it is written;
+the pipeline aborts otherwise. All twenty-four fits (eight tickers, three
+specifications) satisfy these conditions, with conditional standard deviations
+between $0.6\%$ and $13.8\%$ per day against a realised return standard
+deviation of $2.5\%$. Per-fit parameters, log-likelihoods and AIC values appear
+in Appendix Table~\ref{tab:garchfits}.
+
+\subsection{Hierarchical Bayesian model}
+\label{sec:bayes}
+
+The central specification pools information across tickers while treating the
+GARCH forecast as a known observation-level scale. For ticker $i$ on day $t$,
+with $\mathbf{x}_{i,t}$ the standardised predictor vector,
+\begin{align}
+  y_{i,t} \mid \alpha_i, \boldsymbol\beta, s^2
+    &\sim t_\nu\!\left(\alpha_i + \mathbf{x}_{i,t}^{\top}\boldsymbol\beta,\;
+                        s^2\sigma_{i,t+1\mid t}^{2}\right),
+    \label{eq:likelihood}\\
+  \alpha_i \mid \mu_\alpha, \tau_\alpha^2 &\sim \mathcal{N}(\mu_\alpha, \tau_\alpha^2),
+    \label{eq:pooling}\\
+  \beta_j \mid \lambda_j, \tau_\beta &\sim \mathcal{N}(0, \lambda_j^2\tau_\beta^2),
+  \qquad \lambda_j \sim \mathcal{C}^{+}(0,1), \quad \tau_\beta \sim \mathcal{C}^{+}(0,1).
+    \label{eq:horseshoe}
+\end{align}
+
+Three features of this specification carry the analysis.
+
+The GARCH forecast enters~\eqref{eq:likelihood} as a known scale, so the model
+does not relearn volatility clustering and $s^2$ is a single scalar measuring
+whether that scale is correctly sized overall. A value near one means the
+volatility model is already calibrated.
+
+Equation~\eqref{eq:pooling} is the partial-pooling layer. Because $\alpha_i$ is
+drawn from a population distribution, a ticker absent from the training sample
+can still be forecast by integrating $\alpha$ over that distribution, which adds
+$\tau_\alpha^2$ to the predictive variance. Section~\ref{sec:transfer} exploits
+this. Following \citet{gelman2006prior}, $\tau_\alpha$ receives a half-Cauchy
+prior rather than a conventional inverse-gamma: with only eight groups the
+between-ticker standard deviation is weakly identified, and a diffuse
+inverse-gamma prior largely reproduces its own mode.
+
+Equation~\eqref{eq:horseshoe} is the horseshoe prior of
+\citet{carvalho2010horseshoe}. It replaces the more common practice of
+pre-screening predictors by their correlation with the target. That practice is
+unsafe in this setting for a specific reason: a trending series correlates with
+almost any target over a multi-year window, so a correlation screen
+preferentially selects exactly the non-stationary levels that
+Section~\ref{sec:features} excludes. The horseshoe retains every predictor and
+shrinks weak coefficients continuously toward zero while leaving strong ones
+nearly unshrunk, so selection occurs inside the posterior and carries
+uncertainty. It is the continuous analogue of the spike-and-slab selection
+of \citet{qiu2018multivariate}.
+
+Student-$t$ innovations are represented as a scale mixture of normals,
+$y \sim \mathcal{N}(\mu, s^2\sigma^2/\omega)$ with
+$\omega \sim \mathrm{Gamma}(\nu/2,\nu/2)$, which recovers~\eqref{eq:likelihood}
+marginally and keeps every conditional in closed form.
+
+Inference is by blocked Gibbs sampling. All conditionals are conjugate,
+including the horseshoe scales, via the auxiliary-variable representation of
+\citet{makalic2016simple}; the degrees of freedom $\nu$ are drawn by griddy
+Gibbs. Four chains are run from dispersed starting points for 40\,000 iterations,
+discarding the first 20\,000 and thinning by four, giving 20\,000 retained draws.
+Convergence is assessed by rank-normalised $\widehat{R}$ and effective sample
+size \citep{vehtari2021rank}: across 27 monitored quantities the largest
+$\widehat{R}$ is 1.0033 and the smallest bulk effective sample size is 1\,703.
+
+The sampler is validated on synthetic data in which three of twelve coefficients
+are non-zero. It recovers all three signal coefficients with credible intervals
+excluding zero, produces no false positives among the nine null coefficients,
+and recovers the observation scale and the between-group standard deviation.
+
+\subsection{Predictive distributions and scale calibration}
+\label{sec:calibration}
+
+Predictive means and scales use the full posterior rather than plug-in point
+estimates, so parameter uncertainty enters the interval through the law of total
+variance.
+
+One calibration step is applied. GARCH parameters are frozen at the end of the
+training block, and the training block is calmer than what follows: measured as
+the standard deviation of $y/\sigma$, the scale the data require is $1.002$ on
+the training block but $1.118$ on validation and $1.117$ on test. A scale fitted
+to training data alone therefore understates later volatility by roughly twelve
+percent. A single scalar is estimated on the \emph{validation} block and applied
+to the test block; no test observation informs it.
+
+The matching statistic matters. Because the validation block contains the
+COVID-19 dislocation, a variance match is dominated by a few extreme days, which
+is behaviour the Student-$t$ tails are meant to absorb rather than the scale.
+Matching the interquartile range targets the body of the distribution, which is
+what the scale parameter governs, and yields a factor of $1.195$ against $1.220$
+for the variance match.
+
+\subsection{Scoring rules and inference}
+\label{sec:scoring}
+
+Point accuracy is reported as root mean squared error, mean absolute error,
+directional accuracy and out-of-sample $R^2$ against a stated reference
+forecast. The reference is the per-ticker mean computed under the same protocol
+as the model being scored, so it never enjoys an information advantage.
+
+Probabilistic accuracy is reported as the mean logarithmic score, the continuous
+ranked probability score and empirical coverage at the 50\%, 80\%, 90\% and 95\%
+levels \citep{gneiting2007strictly}. All three are reported because they can
+disagree: a model may be better calibrated while being less sharp. Calibration
+is assessed additionally by the probability integral transform, whose values are
+uniform under a correctly specified predictive distribution, tested formally by
+a Kolmogorov--Smirnov statistic.
+
+Volatility forecasts are compared under QLIKE against the squared return as the
+realised-variance proxy. QLIKE is chosen because it preserves the ranking a
+perfect proxy would give even when the available proxy is noisy
+\citep{patton2011volatility}.
+
+All comparisons are tested rather than asserted. Equal predictive accuracy is
+assessed by the \citet{diebold1995comparing} test on per-observation loss
+differentials, using a Newey--West heteroskedasticity- and
+autocorrelation-consistent variance because daily loss differentials are
+serially correlated, together with the small-sample correction of
+\citet{harvey1997testing}. Where a family of tests is reported---one per
+model--ticker pair---significance is additionally assessed after
+Benjamini--Hochberg and Bonferroni correction, since at conventional levels a
+handful of rejections among dozens of tests is what chance alone produces.
