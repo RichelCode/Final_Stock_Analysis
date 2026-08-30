@@ -1,0 +1,119 @@
+% !TEX root = main.tex
+
+\section{Literature Review}
+\label{sec:literature}
+
+\subsection{Classical time-series models and the limits of return predictability}
+
+The autoregressive integrated moving average framework of \citet{box1970time}
+remains the canonical linear model for the conditional mean of a univariate
+series and the natural benchmark against which richer specifications are judged.
+Its known limitation in financial applications lies in the second moment: daily
+returns exhibit conditional heteroskedasticity, which motivated the ARCH model of
+\citet{engle1982autoregressive} and its GARCH generalisation
+\citep{bollerslev1986generalized}, and which implies that a correctly specified
+linear conditional-mean model may still misstate predictive uncertainty by a wide
+margin. A second limitation concerns the conditional mean itself. In a
+comprehensive out-of-sample audit, \citet{welch2008comprehensive} found that most
+proposed return predictors fail to improve upon the historical average, and
+\citet{timmermann2008elusive} characterised return predictability as local and
+episodic---present in short-lived pockets rather than as a stable population
+property. Forecast combination offers partial insurance against this instability
+\citep{rapach2010out}, but the collective evidence establishes a demanding
+baseline: any gain claimed for a more elaborate model must survive genuine
+out-of-sample evaluation over heterogeneous regimes.
+
+\subsection{Machine learning approaches}
+
+Machine learning methods relax the linearity restriction at the cost of a larger
+effective parameter space. Random forests \citep{breiman2001random} control
+overfitting through bootstrap aggregation of decorrelated trees and provide
+internal measures of predictor importance, properties that make them a common
+nonlinear benchmark in return forecasting. In the most systematic comparison to
+date, \citet{gu2020empirical} showed that regression trees and neural networks
+yield economically significant improvements in measuring equity risk premia,
+attributing the gains chiefly to nonlinear predictor interactions that linear
+methods miss. For sequence models, the LSTM architecture
+\citep{hochreiter1997long} was shown by \citet{fischer2018deep} to outperform
+random forests and logistic regression in classifying daily S\&P~500 constituent
+returns, although the documented profitability of the strategy declined in later
+subperiods---an instability consistent with the pocketed predictability described
+above. Subsequent applied work has extended these architectures with
+macroeconomic inputs and hybrid convolutional--recurrent designs
+\citep{latif2025integrating}. Two limitations recur throughout this literature:
+the fitted models are difficult to interpret, and their outputs are point
+predictions unaccompanied by a distributional statement.
+
+A third limitation is less often discussed and is central to this paper. Because
+these models are typically reported at a single regularisation setting chosen by
+the author rather than selected on held-out data, it is difficult to distinguish
+a model that has found signal from one that has fitted noise. Section
+\ref{sec:neural} shows that the distinction is decisive here.
+
+\subsection{Bayesian inference and uncertainty quantification}
+
+The Bayesian literature addresses the distributional limitation directly.
+\citet{west2020bayesian} surveys multivariate Bayesian forecasting with emphasis
+on scalability and structure uncertainty, arguing that decision-relevant
+forecasts require the full predictive distribution rather than a summary of its
+centre. \citet{qiu2018multivariate} develop the multivariate Bayesian structural
+time series model, in which local linear trends, seasonal components and
+spike-and-slab selection over a candidate pool of predictors jointly capture
+contemporaneous correlation across target series while guarding against
+overfitting. In the return-predictability setting specifically, Bayesian
+treatments of model uncertainty---averaging over predictor subsets rather than
+conditioning on a single specification---were shown by \citet{avramov2002stock}
+and \citet{cremers2002stock} to improve out-of-sample performance precisely
+because no individual model is reliably correct. Closer to the present study,
+\citet{chandra2021bayesian} apply Bayesian neural networks to multi-step stock
+price forecasting and report usable predictive intervals even through the
+COVID-19 volatility spike, while \citet{wong2024quantifying} show that standard
+uncertainty-quantification schemes for neural networks miscalibrate under
+volatility clustering, underscoring that calibration must be verified rather than
+assumed. Proper scoring rules \citep{gneiting2007strictly} and tests of equal
+predictive accuracy \citep{diebold1995comparing} supply the formal apparatus for
+such verification, and this paper applies both throughout.
+
+For coefficient shrinkage we adopt the horseshoe prior of
+\citet{carvalho2010horseshoe}, the continuous analogue of the spike-and-slab
+selection used by \citet{qiu2018multivariate}, sampled by the auxiliary-variable
+scheme of \citet{makalic2016simple}.
+
+\subsection{Distribution shift and the fragility of fixed-origin evaluation}
+
+A strand of the machine learning literature that has had limited uptake in
+empirical finance concerns dataset shift: the case in which the joint
+distribution of predictors and target differs between estimation and deployment
+\citep{quinonero2009dataset}. The concern is directly relevant here, because the
+macro-financial variables most commonly used to condition equity forecasts---an
+index level, a policy rate, a yield---are precisely the series whose means move
+permanently across a monetary regime change. Standardising such a series on a
+fixed estimation window and applying the transformation to a later window
+produces inputs far outside the range the estimator has seen, and any model with
+an unbounded output head extrapolates along them. Section
+\ref{sec:extrapolation} documents the consequences and the repair.
+
+\subsection{Hybrid architectures and the remaining gap}
+
+A growing strand seeks to combine the representational capacity of recurrent
+networks with the distributional discipline of econometric volatility models.
+\citet{kim2018forecasting} integrate LSTM networks with multiple GARCH-type
+specifications and report improved index volatility forecasts relative to either
+component alone, and \citet{wang2022garlic} document analogous gains for a
+combined LSTM--GARCH-family model in a highly volatile price series. These
+hybrids, however, typically attach a volatility filter to a point-forecasting
+network rather than deliver a coherent posterior predictive distribution, and
+published comparisons rarely hold the information set fixed across model
+families.
+
+The present study is positioned in that gap. It evaluates classical, machine
+learning and Bayesian models on a single panel with an identical macro-financial
+predictor set and an identical regime-spanning out-of-sample window, and it
+scores them on both point accuracy and the calibration of their stated
+uncertainty. To the extent that the literature reviewed above establishes weak
+and unstable conditional-mean predictability alongside strong and persistent
+structure in conditional variances, the comparison speaks to a practical
+question left open by prior work: whether the principal contribution of
+macroeconomic drivers and Bayesian inference at the daily horizon lies in sharper
+point forecasts or in more honest predictive distributions. The decomposition in
+Section~\ref{sec:decomposition} answers it quantitatively.

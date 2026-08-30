@@ -1,0 +1,143 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{authblk}
+\usepackage{orcidlink}
+
+\sisetup{detect-weight=true, detect-family=true}
+\graphicspath{{../stock_project/reports/figures_v2/}}
+\bibliographystyle{plainnat}
+
+\title{\bfseries Where the Predictability Is: Conditional Variance, Not
+Conditional Mean, Delivers Calibrated Daily Return Forecasts for Large-Cap
+Technology Stocks, 2016--2025}
+
+\author[1]{R.\,O.\ Attafuah}
+\author[2]{B.\,A.\ Adjei}
+\author[3]{K.\ Incoom-Koomson}
+\affil[1]{Miami University}
+\affil[2]{Texas State University}
+\affil[3]{Georgia State University}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+We ask where the predictability in daily large-capitalisation technology equity
+returns resides, using a panel of eight United States stocks over 2016--2025 and
+a held-out window spanning the 2022--2023 monetary tightening cycle. Six model
+classes---baselines, ridge, random forests, GARCH-family volatility models, four
+sequence architectures and a hierarchical Bayesian regression with a horseshoe
+prior---are estimated on one macro-financial information set and scored on point
+accuracy, probabilistic accuracy and interval calibration, with every comparison
+tested by Diebold--Mariano. We find no conditional-mean predictability: zero of
+48 model--ticker tests survive multiplicity correction, and when the sequence
+models are permitted to select their own regularisation on held-out data all
+four discard the predictors and forecast a constant. The conditional variance
+behaves differently: all three GARCH specifications beat a rolling-variance
+benchmark at $p<0.001$. Decomposing the gain in log predictive density over a
+null forecast, the conditional variance contributes $54\%$ and the shape of the
+predictive distribution a further $45\%$, while the conditional mean contributes
+$0.7\%$---statistically detectable at $p=0.029$ and economically negligible.
+Student-$t$ innovations with a validation-calibrated scale reduce mean absolute
+coverage error to $0.022$, and partial pooling yields usable intervals for an
+asset with no estimation history. We also document a silent failure mode:
+standardising non-stationary macroeconomic levels on a fixed origin sends
+held-out inputs to $8.7$ training standard deviations and produces out-of-sample
+$R^2$ as low as $-10\,425\%$ with no error raised. All code, audits and pinned
+dependencies are released.
+\end{abstract}
+
+\noindent\textbf{Keywords:} return predictability; forecast calibration;
+GARCH; hierarchical Bayesian models; distribution shift
+
+\input{introduction}
+\input{literature}
+\input{methodology}
+\input{results}
+\input{conclusion}
+
+% ---------------------------------------------------------------- tables
+\input{tables/tab_features}
+\input{tables/tab_per_ticker}
+\input{tables/tab_volatility}
+\input{tables/tab_probabilistic}
+\input{tables/tab_transfer}
+
+% --------------------------------------------------------------- figures
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig1_extrapolation.pdf}
+\caption{Predictor drift and its repair. Panel (a) shows where the test window
+sits relative to training moments for the v1 feature set, in training standard
+deviations, coloured by whether the corrected specification retains the feature.
+Panel (b) shows the mean out-of-sample $R^2$ across the eight tickers before and
+after the correction.}
+\label{fig:extrapolation}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.62\linewidth]{fig2_reliability.pdf}
+\caption{Interval calibration: empirical coverage against nominal level for four
+predictive specifications, test window, $n=6008$.}
+\label{fig:reliability}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig3_pit.pdf}
+\caption{Probability integral transform histograms. Under a correctly specified
+predictive distribution these are uniform; the dashed line marks the uniform
+density and each panel reports a Kolmogorov--Smirnov test against it.}
+\label{fig:pit}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.75\linewidth]{fig4_shrinkage.pdf}
+\caption{Horseshoe shrinkage weight $1-\kappa$ by predictor. Values near one
+indicate that the data overrode the prior. The single highlighted predictor has
+a $95\%$ credible interval excluding zero.}
+\label{fig:shrinkage}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\linewidth]{fig5_decomposition.pdf}
+\caption{Decomposition of the gain in mean log predictive density over a null
+forecast. Each increment is labelled with its size in nats, its share of the
+total gain, and the Diebold--Mariano $p$-value against the preceding rung.}
+\label{fig:decomposition}
+\end{figure}
+
+% ------------------------------------------------------------- back matter
+\section*{Data Availability Statement}
+Price data are from Yahoo Finance and macro-financial series from the Federal
+Reserve Economic Data service, both publicly available. All code, processed
+data, audit scripts and pinned dependencies required to reproduce every number,
+table and figure in this paper are available at
+\url{https://github.com/RichelCode/Final_Stock_Analysis}.
+
+\section*{Conflict of Interest}
+The authors declare no conflict of interest.
+
+\section*{Author Contributions}
+\textbf{Author 1:} Conceptualization, Data curation, Methodology, Formal
+analysis, Writing -- original draft.
+\textbf{Author 2:} Data curation, Methodology, Investigation, Writing --
+original draft.
+\textbf{Author 3:} Supervision, Project administration, Validation, Writing --
+review and editing.
+
+\bibliography{references}
+
+\end{document}

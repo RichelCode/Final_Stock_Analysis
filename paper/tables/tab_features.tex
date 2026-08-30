@@ -23,15 +23,15 @@ DFF\_diff\_lag1 & macro & Retained & Daily change in the effective federal funds
 DGS10\_diff\_lag1 & macro & Retained & Daily change in the 10-year Treasury yield \\
 garch11\_t\_sigma1 & garch & Retained & GARCH(1,1)-t one-step-ahead conditional SD for t+1 \\
 \midrule
-SP500\_lag1 & macro & Excluded & Non-stationary level (ADF p=0.99). Test-window mean sits at z=+8.73 under training moments and 100\% of test rows exce... \\
-DFF\_lag1 & macro & Excluded & Non-stationary level (ADF p=0.83). Test-window mean at z=+4.72, 100\% of test rows beyond 3 training SDs. Replaced by ... \\
-DGS10\_lag1 & macro & Excluded & Non-stationary level (ADF p=0.80). Test-window mean at z=+3.86, 85\% of test rows beyond 3 training SDs. Replaced by D... \\
-vix\_level\_lag1 & uncertainty & Excluded & Stationary, but superseded by its log transform vix_log_lag1. \\
+SP500\_lag1 & macro & Excluded & Non-stationary level (ADF p=0.99). Test-window mean sits at z=+8.73 under training moments and 100\% of test rows... \\
+DFF\_lag1 & macro & Excluded & Non-stationary level (ADF p=0.83). Test-window mean at z=+4.72, 100\% of test rows beyond 3 training SDs. Replaced... \\
+DGS10\_lag1 & macro & Excluded & Non-stationary level (ADF p=0.80). Test-window mean at z=+3.86, 85\% of test rows beyond 3 training SDs. Replaced... \\
+vix\_level\_lag1 & uncertainty & Excluded & Stationary, but superseded by its log transform vix\_log\_lag1. \\
 ret\_t & own return & Excluded & Bit-identical to `ret` (max absolute difference 0.0). Exact duplicate. \\
-sp500\_ret\_lag1 & market & Excluded & Correlates 0.9985 with mkt_ret_lag1; the two measure the same quantity. Retaining both inflates collinearity and makes... \\
-garch11\_t\_var1 & garch & Excluded & Square of garch11_t_sigma1; redundant. \\
-gjr11\_t\_sigma1 & garch & Excluded & Held back for the volatility-model robustness check rather than entered alongside garch11_t_sigma1, with which it is n... \\
-gjr11\_t\_var1 & garch & Excluded & Square of gjr11_t_sigma1; redundant. \\
+sp500\_ret\_lag1 & market & Excluded & Correlates 0.9985 with mkt\_ret\_lag1; the two measure the same quantity. Retaining both inflates collinearity and... \\
+garch11\_t\_var1 & garch & Excluded & Square of garch11\_t\_sigma1; redundant. \\
+gjr11\_t\_sigma1 & garch & Excluded & Held back for the volatility-model robustness check rather than entered alongside garch11\_t\_sigma1, with which it... \\
+gjr11\_t\_var1 & garch & Excluded & Square of gjr11\_t\_sigma1; redundant. \\
 egarch11\_t\_sigma1 & garch & Excluded & Training-split fit diverged: values reach 1e+148 and the training SD is infinite. Excluded pending re-estimation. \\
 egarch11\_t\_var1 & garch & Excluded & Square of a diverged fit; training SD is infinite. \\
 \bottomrule

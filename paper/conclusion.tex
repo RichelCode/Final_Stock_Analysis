@@ -1,0 +1,101 @@
+% !TEX root = main.tex
+
+\section{Conclusion and Recommendations}
+\label{sec:conclusion}
+
+This study asked where the predictability in daily large-capitalisation
+technology equity returns resides, and answered it by decomposing a predictive
+distribution into the parts a forecaster can actually control.
+
+The conditional mean is not one of them. Across eight assets, six model classes
+and two evaluation protocols, nothing improves on a per-ticker historical
+average. Zero of 48 model--ticker tests survive multiplicity correction, and the
+count of uncorrected rejections falls below what chance alone produces. When
+four sequence architectures are permitted to choose their own regularisation on
+held-out data, all four choose to discard the predictors entirely and forecast a
+constant. The result is not that flexible models fail to find the signal; it is
+that, offered a fair choice, they decline to look for it.
+
+The conditional variance is a different matter. All three GARCH-family
+specifications beat a rolling-variance benchmark at $p<0.001$, and the
+conditional variance accounts for $54\%$ of the total gain in log predictive
+density over a null forecast. A further $45\%$ comes from the shape of the
+predictive distribution---Student-$t$ innovations and a scale calibrated on
+validation data. The conditional mean accounts for $0.7\%$.
+
+\subsection{Recommendations for practice}
+
+\textbf{Spend modelling effort on the second moment.} At the daily horizon the
+return of effort in conditional-mean modelling is close to zero, while
+conditional-variance modelling yields large and testable gains. A practitioner
+choosing where to allocate attention should not divide it evenly.
+
+\textbf{Report calibration, not only accuracy.} Every conclusion above that
+matters is invisible to RMSE. The four rungs of
+Section~\ref{sec:decomposition} differ by less than $0.4\%$ in RMSE and by
+$0.28$ nats in log score. A study reporting only point accuracy would conclude
+that nothing distinguishes them.
+
+\textbf{Test differences rather than ranking them.} Several apparent orderings
+in this study dissolve under testing: EGARCH's QLIKE advantage over GARCH
+($p=0.33$), the single per-ticker rejection that fails multiplicity correction,
+and---in an earlier version of this pipeline---an entire ranking of volatility
+models produced by a diverged fit.
+
+\textbf{Separate statistical from economic significance.} The conditional mean's
+contribution is real at $p=0.029$ and negligible at $0.7\%$ of the total. With
+several thousand observations these two facts coexist routinely, and reporting
+only the first would misrepresent the finding.
+
+\textbf{Declare features; never infer them from column type.} The single most
+consequential defect in the earlier version of this work was a feature-selection
+rule that admitted any numeric column. It produced no error, no warning and no
+implausible training diagnostic, and it invalidated every out-of-sample number
+in the study.
+
+\subsection{Limitations}
+
+The scope is eight assets in one sector over one decade. The between-ticker
+variance is identified by eight groups, which is few, and the transfer result of
+Section~\ref{sec:transfer} should be read as evidence about large-capitalisation
+technology equities rather than about equities generally.
+
+GARCH parameters are estimated once on the training block and then held fixed.
+This is conservative and avoids look-ahead, but Section~\ref{sec:calibration-results}
+shows it also understates later volatility by roughly twelve percent. Rolling
+re-estimation is the obvious extension and is not attempted here.
+
+Calibration is improved but not achieved: PIT uniformity is still rejected at
+$p=0.012$. Candidate explanations include remaining asymmetry in the conditional
+distribution, time variation in the degrees of freedom, and the single scalar
+used for scale calibration where a time-varying factor may be warranted.
+
+The realised-variance proxy is the squared daily return. QLIKE is robust to
+proxy noise \citep{patton2011volatility}, but intraday data would support sharper
+volatility comparisons than are possible here.
+
+Finally, the study conditions on one information set. The absence of
+conditional-mean predictability is a statement about these fourteen predictors
+over this window, and is consistent with, rather than a demonstration of, the
+episodic predictability described by \citet{timmermann2008elusive}.
+
+\subsection{Extensions}
+
+Three directions follow directly. Rolling GARCH re-estimation would test whether
+the scale miscalibration is an artefact of frozen parameters, and would make the
+calibration step unnecessary if so. A skewed or time-varying-shape predictive
+distribution would address the residual PIT non-uniformity. And extending the
+panel across sectors would test whether the near-exchangeability found here is a
+property of large-capitalisation technology equities specifically, or a more
+general feature of the asset class.
+
+\subsection{Reproducibility}
+
+All data are public: prices from Yahoo Finance, macro-financial series from the
+Federal Reserve Economic Data service. The full pipeline---panel construction,
+feature dictionary, volatility estimation, the Bayesian sampler, both evaluation
+protocols, all scoring rules and every figure and table in this
+paper---is released with pinned dependencies. Two audit scripts are included
+that exit non-zero when they detect the predictor-drift and prediction-scale
+failures described in Section~\ref{sec:extrapolation}, so that the defect which
+invalidated the earlier analysis cannot recur silently.

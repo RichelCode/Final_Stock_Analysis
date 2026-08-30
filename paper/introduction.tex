@@ -1,0 +1,95 @@
+% !TEX root = main.tex
+
+\section{Introduction}
+\label{sec:intro}
+
+Between 2016 and 2025, large-capitalisation United States technology equities
+traded through several distinct macro-financial regimes: an extended period of
+near-zero policy rates, the COVID-19 market dislocation of March 2020, the most
+rapid monetary tightening cycle since the early 1980s beginning in 2022, and the
+partial normalisation of rates that followed. These episodes produced pronounced
+volatility clustering, heavy-tailed daily returns, and repeated shifts in the
+joint distribution of returns and macroeconomic state variables---features long
+documented as stylised facts of asset returns \citep{cont2001empirical}. Such
+conditions are hostile to forecasting models estimated under an assumption of
+covariance stationarity, and they reproduce at the level of a portfolio a
+persistent finding of the empirical finance literature: predictive relations
+that appear stable in sample frequently deteriorate out of sample
+\citep{welch2008comprehensive, timmermann2008elusive}. As \citet{west2020bayesian}
+argues, structure uncertainty then becomes as consequential as parameter
+uncertainty, since the analyst must decide not only what the coefficients are
+but which model, if any, remains adequate as the regime changes.
+
+There are sound theoretical grounds for conditioning return forecasts on
+macro-financial information. Multifactor asset pricing theory implies that
+innovations in systematic state variables are priced in equity returns
+\citep{chen1986economic}. Empirically, unanticipated changes in the federal funds
+rate induce large and statistically significant equity market responses
+\citep{bernanke2005explains}; option-implied volatility, summarised by the CBOE
+Volatility Index, is contemporaneously and negatively associated with returns
+\citep{whaley2000investor}; and comovement with the broad market index remains
+the dominant source of systematic variation in individual stock returns. Recent
+data-driven studies confirm that volatility and uncertainty measures rank among
+the most influential predictors of index returns \citep{latif2025integrating},
+and that volatility transmission across markets is itself time varying
+\citep{agrawal2026volatility}. The unresolved methodological question is
+therefore not whether such variables carry information, but how they should enter
+the forecasting model and how the resulting predictive uncertainty should be
+quantified.
+
+This paper addresses that question by decomposing the problem rather than by
+running a horse race. A predictive distribution for a daily return has a
+location, a scale and a shape, and a forecaster can invest effort in any of the
+three. We ask which investment pays.
+
+The design is a controlled comparison on a balanced panel of eight large-cap
+technology stocks over 2016--2025, with the effective federal funds rate, the
+ten-year Treasury yield, the VIX and a market proxy serving as macro-financial
+conditioning information. Six model classes are estimated on one identical
+feature set: naive baselines, pooled ridge, a pooled random forest, three
+GARCH-family volatility specifications, four sequence architectures, and a
+hierarchical Bayesian regression that treats the GARCH conditional standard
+deviation as a known observation scale and places a horseshoe prior on the mean
+coefficients. All are fitted on a chronological training sample and evaluated on
+a strictly held-out window spanning the tightening cycle and its aftermath, so
+that out-of-sample performance is measured across materially different
+volatility regimes. Point accuracy is assessed by root mean squared error and
+out-of-sample $R^2$ against a per-ticker mean benchmark; probabilistic adequacy
+by logarithmic score, continuous ranked probability score and the calibration of
+predictive intervals. Every comparison is tested by Diebold--Mariano rather than
+ranked.
+
+Two features of the problem motivate this design. First, at the daily horizon the
+signal-to-noise ratio in equity returns is low, and differences in point accuracy
+across competing model classes are typically negligible; an evaluation confined
+to point forecasts therefore yields an incomplete and potentially misleading
+ordering. Second, the model classes that dominate the recent forecasting
+literature---tree ensembles and recurrent neural networks---produce predictions
+without an accompanying probability model, and so cannot state how much
+confidence a forecast warrants or how that confidence should contract when the
+market moves from a calm to a turbulent state \citep{chandra2021bayesian,
+wong2024quantifying}.
+
+Our findings are largely negative on the first moment and positive on the
+second. No model class improves on a per-ticker historical average, and the
+result survives disaggregation to individual assets and correction for multiple
+testing; when the sequence models are permitted to select their own
+regularisation on held-out data, all four discard the predictors entirely and
+forecast a constant. The conditional variance behaves differently, with all
+three GARCH specifications beating a rolling-variance benchmark decisively.
+Decomposing the gain in log predictive density over a null forecast, the
+conditional variance contributes $54\%$ and the shape of the predictive
+distribution a further $45\%$, while the conditional mean contributes $0.7\%$.
+
+We also document a failure mode that is silent rather than merely severe.
+Standardising non-stationary macroeconomic levels on a fixed origin sends
+held-out inputs far outside the range seen in estimation, and every model with
+an unbounded output head extrapolates along them, producing out-of-sample $R^2$
+as low as $-10\,425\%$ with no exception raised and no implausible training
+diagnostic. Because the defect is detectable only by auditing predictor
+distributions across splits and the scale of the predictions themselves, both
+audits are released with the code.
+
+The remainder of the paper reviews the relevant literature, describes the data
+and methodology, reports the empirical results, and concludes with
+recommendations for practice.

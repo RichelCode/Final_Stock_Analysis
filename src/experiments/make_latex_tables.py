@@ -47,8 +47,37 @@ PRETTY = {
 }
 
 
+# LaTeX special characters. Backslash is handled first so the replacements it
+# introduces are not themselves re-escaped.
+_TEX_ESCAPES = [
+    ("\\", r"\textbackslash{}"), ("&", r"\&"), ("%", r"\%"), ("$", r"\$"),
+    ("#", r"\#"), ("_", r"\_"), ("{", r"\{"), ("}", r"\}"),
+    ("~", r"\textasciitilde{}"), ("^", r"\textasciicircum{}"),
+]
+
+
+def tex_escape(text: str) -> str:
+    """Escape free text for LaTeX.
+
+    Descriptions and exclusion reasons carry column names such as
+    mkt_ret_lag1, whose underscores LaTeX reads as subscripts in text mode.
+    """
+    out = str(text)
+    for src, dst in _TEX_ESCAPES:
+        out = out.replace(src, dst)
+    return out
+
+
+def truncate(text: str, limit: int = 115) -> str:
+    """Trim to a word boundary, before escaping, so no escape is cut in half."""
+    text = str(text)
+    if len(text) <= limit:
+        return text
+    return text[:limit].rsplit(" ", 1)[0] + "..."
+
+
 def label(x: str) -> str:
-    return PRETTY.get(x, x.replace("_", r"\_"))
+    return PRETTY.get(x, tex_escape(x))
 
 
 def stars(p) -> str:
@@ -79,7 +108,7 @@ def table_per_ticker():
     d = d[keep]
 
     cols = " ".join(["S[table-format=-2.2]"] * len(keep))
-    header = " & ".join(label(c) for c in keep)
+    header = " & ".join("{" + label(c) + "}" for c in keep)
     lines = [
         r"\begin{table}[htbp]", r"\centering",
         r"\caption{Out-of-sample $R^2$ (\%) against the per-ticker mean "
@@ -209,13 +238,12 @@ def table_features():
         r"Feature & Family & Status & Note \\", r"\midrule",
     ]
     for _, r in d[d["include"]].iterrows():
-        lines.append(f"{label(r['name'])} & {r['family']} & Retained & "
-                     f"{r['description']} " + r"\\")
+        lines.append(f"{label(r['name'])} & {tex_escape(r['family'])} & Retained & "
+                     f"{tex_escape(truncate(r['description']))} " + r"\\")
     lines.append(r"\midrule")
     for _, r in d[~d["include"]].iterrows():
-        reason = str(r["reason"]).replace("%", r"\%")
-        reason = (reason[:118] + "...") if len(reason) > 118 else reason
-        lines.append(f"{label(r['name'])} & {r['family']} & Excluded & {reason} " + r"\\")
+        lines.append(f"{label(r['name'])} & {tex_escape(r['family'])} & Excluded & "
+                     f"{tex_escape(truncate(r['reason']))} " + r"\\")
     lines += [r"\bottomrule", r"\end{tabular}", r"\end{table}"]
     write("tab_features", "\n".join(lines))
 
