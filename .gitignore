@@ -1,14 +1,23 @@
-.Trash-0/
-.ipynb_checkpoints/
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*.egg-info/
+
+# Environments
+.venv/
+venv/
+env/
+.env
+
+# OS / editor
 .DS_Store
-.venv/
-*.ipynb_checkpoints/
 .Trash-0/
-.venv/
-.venv/
-.Trash-0/
+.vscode/
+.idea/
+
+# Notebooks
 .ipynb_checkpoints/
+
+# Local scratch
+scratch/
+*.log
