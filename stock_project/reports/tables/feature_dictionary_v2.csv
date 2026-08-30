@@ -1,0 +1,27 @@
+name,family,description,source,transform,observable_at,stationary,include,reason
+ret,own return,Own log return realised on day t,panel,identity,close of t,True,True,
+ret_lag1,own return,Own log return on day t-1,panel,lag 1 of ret,close of t,True,True,
+ret_lag2,own return,Own log return on day t-2,panel,lag 2 of ret,close of t,True,True,
+ret_lag3,own return,Own log return on day t-3,panel,lag 3 of ret,close of t,True,True,
+ret_lag5,own return,Own log return on day t-5,panel,lag 5 of ret,close of t,True,True,
+ret_lag10,own return,Own log return on day t-10,panel,lag 10 of ret,close of t,True,True,
+ret_vol5,own volatility,Trailing 5-day SD of own returns through t,panel,"rolling sd, window 5",close of t,True,True,
+ret_vol10,own volatility,Trailing 10-day SD of own returns through t,panel,"rolling sd, window 10",close of t,True,True,
+ret_vol20,own volatility,Trailing 20-day SD of own returns through t,panel,"rolling sd, window 20",close of t,True,True,
+mkt_ret_lag1,market,"Market proxy (SPY) log return, most recent close",panel,identity,close of t,True,True,
+vix_log_lag1,uncertainty,Log of the CBOE VIX at the most recent close,derived from vix_level_lag1,natural log,close of t,True,True,"Level is stationary by ADF, but right-skewed; the log is better behaved for a linear model and leaves the information intact."
+vix_ret_lag1,uncertainty,Log change in VIX at the most recent close,panel,identity,close of t,True,True,
+DFF_diff_lag1,macro,Daily change in the effective federal funds rate,panel,identity,close of t,True,True,
+DGS10_diff_lag1,macro,Daily change in the 10-year Treasury yield,panel,identity,close of t,True,True,
+garch11_t_sigma1,garch,"GARCH(1,1)-t one-step-ahead conditional SD for t+1",panel,identity,close of t,True,True,"Parameters estimated on the training split only, then filtered forward. Used by hybrid specifications and as the known scale in the hierarchical Bayesian model."
+SP500_lag1,macro,S&P 500 index level at the most recent close,panel,identity,close of t,False,False,Non-stationary level (ADF p=0.99). Test-window mean sits at z=+8.73 under training moments and 100% of test rows exceed 3 training SDs. Primary driver of the out-of-sample extrapolation failure. Its stationary counterpart mkt_ret_lag1 is retained.
+DFF_lag1,macro,"Effective federal funds rate, level",panel,identity,close of t,False,False,"Non-stationary level (ADF p=0.83). Test-window mean at z=+4.72, 100% of test rows beyond 3 training SDs. Replaced by DFF_diff_lag1."
+DGS10_lag1,macro,"10-year Treasury constant maturity yield, level",panel,identity,close of t,False,False,"Non-stationary level (ADF p=0.80). Test-window mean at z=+3.86, 85% of test rows beyond 3 training SDs. Replaced by DGS10_diff_lag1."
+vix_level_lag1,uncertainty,CBOE VIX level at the most recent close,panel,identity,close of t,True,False,"Stationary, but superseded by its log transform vix_log_lag1."
+ret_t,own return,Own log return realised on day t,panel,target_ret shifted by 1,close of t,True,False,Bit-identical to `ret` (max absolute difference 0.0). Exact duplicate.
+sp500_ret_lag1,market,S&P 500 index log return,panel,identity,close of t,True,False,Correlates 0.9985 with mkt_ret_lag1; the two measure the same quantity. Retaining both inflates collinearity and makes the Bayesian coefficient posteriors uninterpretable.
+garch11_t_var1,garch,"GARCH(1,1)-t one-step-ahead conditional variance",panel,identity,close of t,True,False,Square of garch11_t_sigma1; redundant.
+gjr11_t_sigma1,garch,"GJR-GARCH(1,1)-t one-step-ahead conditional SD",panel,identity,close of t,True,False,"Held back for the volatility-model robustness check rather than entered alongside garch11_t_sigma1, with which it is near-collinear."
+gjr11_t_var1,garch,"GJR-GARCH(1,1)-t one-step-ahead conditional variance",panel,identity,close of t,True,False,Square of gjr11_t_sigma1; redundant.
+egarch11_t_sigma1,garch,"EGARCH(1,1)-t one-step-ahead conditional SD",panel,identity,close of t,True,False,Training-split fit diverged: values reach 1e+148 and the training SD is infinite. Excluded pending re-estimation.
+egarch11_t_var1,garch,"EGARCH(1,1)-t one-step-ahead conditional variance",panel,identity,close of t,True,False,Square of a diverged fit; training SD is infinite.
