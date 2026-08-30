@@ -1,0 +1,236 @@
+% !TEX root = main.tex
+
+\section{Results and Discussion}
+\label{sec:results}
+
+All results are computed on the same held-out block of 6\,008 observations
+covering 2023--2025, against the same per-ticker mean benchmark, and every
+comparison is tested rather than asserted.
+
+\subsection{The conditional mean}
+\label{sec:mean}
+
+No model class improves on the per-ticker mean benchmark. Under the
+fixed-origin protocol, pooled ridge attains an out-of-sample $R^2$ of
+$-0.11\%$ and the pooled random forest $-0.34\%$; under the expanding-window
+protocol the corresponding figures are $-0.28\%$ and $-0.31\%$. Diebold--Mariano
+tests against the benchmark return $p$-values of $0.36$, $0.18$, $0.17$ and
+$0.25$ respectively. None of the four is distinguishable from a forecast that
+simply reports each ticker's historical average.
+
+Directional accuracy tells the same story from a different angle. The benchmark
+attains $0.5426$, which is exactly the proportion of positive days in the test
+window, since a constant positive forecast is right whenever the market rises.
+No model exceeds it.
+
+Table~\ref{tab:per-ticker} disaggregates by ticker, and this is where the
+evidence is strongest. Across 48 model--ticker Diebold--Mariano tests, exactly
+one rejects at the uncorrected 5\% level: the hierarchical model on NVDA, at
+$p=0.0216$. That single rejection is fewer than the 2.4 that 48 independent
+tests would produce by chance under the null, and it survives neither
+Benjamini--Hochberg control of the false discovery rate
+\citep{benjamini1995controlling} nor Bonferroni correction. Under the
+expanding-window protocol there are no rejections at all, corrected or
+otherwise. The pattern is not a failure to detect predictability; it is what a
+sample containing none looks like.
+
+\subsection{Sequence models and the value of regularisation}
+\label{sec:neural}
+
+A natural objection is that linear and tree models are too rigid to find a
+nonlinear signal. Four sequence architectures---LSTM, GRU, a one-dimensional
+convolutional network and a Transformer encoder---were therefore estimated on
+the same features, with the same training budget, and with the same privilege
+ridge receives: each searched six regularisation configurations and selected one
+by validation loss.
+
+The outcome is unanimous. All four select the strongest available weight decay
+and converge on a forecast whose standard deviation is zero to three decimal
+places. Out-of-sample $R^2$ ranges from $-0.04\%$ to $-0.09\%$, and
+Diebold--Mariano $p$-values against the benchmark range from $0.13$ to $0.51$.
+Given free choice of regularisation on held-out data, every architecture
+concludes that the optimal amount of signal to extract from fourteen
+macro-financial predictors is none, and collapses to the benchmark.
+
+Two caveats belong with this result. The selected penalty sits at the top of the
+search grid, which would ordinarily indicate too narrow a search; here it does
+not, because the forecast standard deviation has already reached zero and no
+larger penalty can alter it. And the finding is conditional on this information
+set, this decade and these eight assets. It is not a claim about market
+efficiency in general, but a demonstration consistent with the local and
+episodic predictability described by \citet{timmermann2008elusive}.
+
+The contrast with the untuned specifications is instructive in its own right.
+Without a regularisation search the same four architectures return out-of-sample
+$R^2$ between $-6.5\%$ and $-35.6\%$, with forecast dispersion between
+$23\%$ and $55\%$ of the realised return standard deviation. The unregularised
+models are not finding signal; they are fitting noise and paying for it out of
+sample.
+
+\subsection{The conditional variance}
+\label{sec:variance}
+
+The second moment behaves entirely differently. Table~\ref{tab:volatility}
+reports QLIKE for the three conditional specifications and a 20-day rolling
+variance benchmark, all scored on an identical sample.
+
+All three conditional models beat the benchmark decisively: GARCH(1,1)-$t$ at
+$\mathrm{DM}=-4.33$ ($p=0.00002$), GJR at $-3.48$ ($p=0.0005$) and EGARCH at
+$-3.32$ ($p=0.0009$). This is the first comparison in the study in which a
+richer model reliably outperforms a naive alternative.
+
+Among the conditional specifications, however, the differences are largely not
+significant. GARCH attains the best QLIKE at $-6.536$, but against EGARCH the
+difference carries $p=0.325$ and against GJR it sits on the boundary at
+$p=0.0499$; GJR against EGARCH gives $p=0.687$. The asymmetric extensions,
+motivated by the leverage effect \citep{nelson1991conditional,
+glosten1993relation}, deliver no measurable improvement for these tickers over
+this window. The symmetric specification is retained on parsimony grounds.
+
+\subsection{Decomposing the probabilistic gain}
+\label{sec:decomposition}
+
+Sections~\ref{sec:mean} and~\ref{sec:variance} point in opposite directions, and
+Figure~\ref{fig:decomposition} resolves them. A predictive distribution has a
+location, a scale and a shape; the ladder adds one at a time to a null
+predictive, scoring each rung on the same sample.
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+Addition & Gain (nats) & Share & DM $p$ \\
+\midrule
+Conditional variance (GARCH)      & $+0.1528$ & 54.4\% & $<0.00001$ \\
+Conditional mean (ridge)          & $+0.0020$ &  0.7\% & $0.0293$ \\
+Fat tails and scale calibration   & $+0.1261$ & 44.9\% & $<0.00001$ \\
+\midrule
+Total                             & $+0.2808$ & 100\%  & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The conditional mean contributes $0.7\%$ of the total gain. That contribution is
+statistically detectable at $p=0.029$ and economically trivial, and the two
+statements are not in tension: with 6\,008 observations a Diebold--Mariano test
+resolves differences far below any that would affect a decision. The distinction
+is worth stating explicitly, because a study reporting only the $p$-value would
+present this as evidence that macroeconomic conditioning improves density
+forecasts, which it does not in any practical sense.
+
+The remaining $99.3\%$ divides between the conditional variance ($54.4\%$) and
+the shape of the predictive distribution ($44.9\%$). Getting the shape right is
+worth nearly as much as getting the scale right---a result that would be
+invisible to any evaluation confined to point forecasts.
+
+\subsection{Calibration}
+\label{sec:calibration-results}
+
+Table~\ref{tab:probabilistic} and Figures~\ref{fig:reliability}
+and~\ref{fig:pit} assess whether the stated uncertainty is honest.
+
+The Gaussian predictive is well calibrated in the tails, attaining $0.909$
+against a $90\%$ nominal level and $0.943$ against $95\%$, but over-covers
+substantially in the body at $0.572$ against $50\%$. This is the signature of a
+thin-tailed density fitted to fat-tailed returns: with no allowance for
+occasional large moves, the density widens everywhere to accommodate them.
+
+Student-$t$ innovations with validation-based scale calibration attain $0.536$,
+$0.825$, $0.918$ and $0.958$ against the four nominal levels, a mean absolute
+coverage error of $0.022$ against the Gaussian's $0.030$, alongside a decisively
+better log score ($2.478$ against $2.352$, $p<0.00001$) and CRPS.
+
+Two further points deserve emphasis, both of which qualify the result.
+
+First, the Gaussian specification concealed a scale error rather than avoiding
+it. Measured as the standard deviation of $y/\sigma$, the scale the data require
+is $1.002$ on the training block but $1.117$ on the test block: GARCH parameters
+frozen at end-2019 understate 2023--2025 volatility by roughly twelve percent.
+The Gaussian likelihood inflates its variance to absorb outliers, and that
+inflation happened to offset the shortfall, producing accidentally reasonable
+$90\%$ coverage alongside visibly over-wide $50\%$ intervals. Separating tail
+behaviour from scale makes the miscalibration visible, and the validation block
+corrects it: the scale ratio there is $1.118$, almost exactly the test value.
+
+Second, calibration is improved rather than achieved. The Kolmogorov--Smirnov
+statistic against PIT uniformity falls from $0.0517$ under the Gaussian to
+$0.0206$ under the Student-$t$, but the latter still rejects uniformity at
+$p=0.012$. The predictive distribution is materially better, not correct, and
+Section~\ref{sec:conclusion} treats the residual misspecification as open.
+
+\subsection{What survives shrinkage}
+\label{sec:selection}
+
+Figure~\ref{fig:shrinkage} reports the horseshoe shrinkage weight for each
+predictor. One of fourteen has a $95\%$ credible interval excluding zero: the
+daily change in the effective federal funds rate, at
+$0.00063$ with interval $[0.00028,\,0.00097]$ and shrinkage weight $0.89$. The
+market return and the change in the VIX follow at weights $0.67$ and $0.56$,
+with intervals covering zero. Every own-return lag is shrunk toward zero.
+
+The direction is consistent with the monetary-policy transmission documented by
+\citet{bernanke2005explains}, and the magnitude is economically small: roughly
+six basis points of next-day return per standard-deviation change in the policy
+rate, against a daily return standard deviation of 248 basis points.
+
+The contrast with the v1 correlation screen is the substantive point. That
+procedure selected the ten predictors most correlated with the target on the
+training block, and a trending series correlates with almost any target over a
+four-year window; it therefore preferentially selected the non-stationary levels
+that Section~\ref{sec:extrapolation} shows to be destructive. Placing selection
+inside the posterior removes that failure mode.
+
+\subsection{Cross-asset transfer}
+\label{sec:transfer}
+
+Table~\ref{tab:transfer} reports leave-one-ticker-out performance. A ticker
+entirely absent from estimation, whose intercept is integrated over the
+population distribution, attains a mean log score of $2.4727$ against $2.4777$
+for the same model estimated with that ticker included---a gap of $0.005$
+nats---and retains $87\%$ coverage at the $90\%$ nominal level.
+
+Revealing the held-out ticker's own history changes almost nothing. Across
+$k \in \{0, 20, 60, 120, 250\}$ days the mean log score moves from $2.4727$ to
+$2.4722$ and RMSE is unchanged to five decimal places, while the posterior
+demonstrably shifts between settings.
+
+The reading is that these eight assets are close to exchangeable for forecasting
+purposes: the between-ticker intercept variance is small relative to observation
+noise, so the population layer supplies essentially everything and asset
+identity supplies almost nothing. This is what makes partial pooling worth its
+complexity here, since it delivers usable predictive intervals for an asset with
+no estimation history at all.
+
+\subsection{Fixed origin against expanding window}
+\label{sec:extrapolation}
+
+The final result is methodological, and it is reported because the failure it
+describes is silent.
+
+An earlier version of this pipeline selected model inputs by column type, which
+admitted the three non-stationary levels of Section~\ref{sec:features}.
+Standardised on 2016--2019 moments and applied to 2023--2025, the S\&P~500 level
+arrives at $z = +8.7$, with $100\%$ of test observations beyond three training
+standard deviations; the policy rate arrives at $z=+4.7$ and the ten-year yield
+at $z=+3.9$ (Figure~\ref{fig:extrapolation}a).
+
+Every model with an unbounded output head extrapolated along those axes. The
+LSTM's test predictions correlate with the S\&P~500 level at $r=0.88$ and imply a
+$+12\%$ return every trading day for three years. Sixteen of twenty-one saved
+models failed a prediction sanity check. Training error remained normal
+throughout, no exception was raised, and metric files were written as usual.
+
+Replacing the levels with stationary counterparts moves mean out-of-sample $R^2$
+across the eight tickers from $-6.23\%$ to $-0.19\%$ for ridge, from $-26.16\%$
+to $-0.47\%$ for the random forest and from $-24.58\%$ to $+0.13\%$ for the
+hierarchical model (Figure~\ref{fig:extrapolation}b). For the sequence models
+the corresponding shift is from per-ticker means between $-638\%$ and $-10\,425\%$
+to between $-0.04\%$ and $-0.09\%$.
+
+Two general lessons follow. Fitting a scaler once and freezing it is safe only
+for stationary predictors, and the expanding-window protocol, which refits the
+scaler inside each fold, is the appropriate default when that cannot be
+guaranteed: it alone moves fixed-split ridge from $-0.044$ to $-0.013$ in
+out-of-sample $R^2$ on the uncorrected feature set. More importantly, the
+failure produces no diagnostic of its own. It is detectable only by auditing the
+distribution of predictors across splits and the scale of the predictions
+themselves, which is why both audits are released with the code.
