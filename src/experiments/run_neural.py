@@ -85,35 +85,58 @@ def make_sequences(df: pd.DataFrame, features: list[str], seq_len: int):
     return np.stack(X), np.asarray(y, np.float32), pd.DataFrame(meta).reset_index(drop=True)
 
 
-def build_lstm(shape):
-    return keras.Sequential([keras.Input(shape=shape),
-                             keras.layers.LSTM(48), keras.layers.Dropout(0.2),
-                             keras.layers.Dense(1)])
+# Regularisation grid, searched on the validation split.
+#
+# The comparison must be fair: RidgeCV selects its penalty on held-out data, so
+# a neural model given one fixed architecture and no penalty search is not a
+# like-for-like competitor. Without this the null result would be open to the
+# obvious objection that the sequence models were never tuned. The grid spans
+# three orders of magnitude in weight decay and two dropout settings.
+L2_GRID = [1e-5, 1e-3, 1e-1]
+DROPOUT_GRID = [0.2, 0.5]
 
 
-def build_gru(shape):
-    return keras.Sequential([keras.Input(shape=shape),
-                             keras.layers.GRU(48), keras.layers.Dropout(0.2),
-                             keras.layers.Dense(1)])
+def build_lstm(shape, l2, dropout):
+    reg = keras.regularizers.l2(l2)
+    return keras.Sequential([
+        keras.Input(shape=shape),
+        keras.layers.LSTM(48, kernel_regularizer=reg, recurrent_regularizer=reg),
+        keras.layers.Dropout(dropout),
+        keras.layers.Dense(1, kernel_regularizer=reg)])
 
 
-def build_cnn(shape):
-    return keras.Sequential([keras.Input(shape=shape),
-                             keras.layers.Conv1D(48, 3, activation="relu", padding="causal"),
-                             keras.layers.GlobalAveragePooling1D(),
-                             keras.layers.Dropout(0.2), keras.layers.Dense(1)])
+def build_gru(shape, l2, dropout):
+    reg = keras.regularizers.l2(l2)
+    return keras.Sequential([
+        keras.Input(shape=shape),
+        keras.layers.GRU(48, kernel_regularizer=reg, recurrent_regularizer=reg),
+        keras.layers.Dropout(dropout),
+        keras.layers.Dense(1, kernel_regularizer=reg)])
 
 
-def build_transformer(shape):
+def build_cnn(shape, l2, dropout):
+    reg = keras.regularizers.l2(l2)
+    return keras.Sequential([
+        keras.Input(shape=shape),
+        keras.layers.Conv1D(48, 3, activation="relu", padding="causal",
+                            kernel_regularizer=reg),
+        keras.layers.GlobalAveragePooling1D(),
+        keras.layers.Dropout(dropout),
+        keras.layers.Dense(1, kernel_regularizer=reg)])
+
+
+def build_transformer(shape, l2, dropout):
+    reg = keras.regularizers.l2(l2)
     inp = keras.Input(shape=shape)
-    x = keras.layers.Dense(32)(inp)
-    attn = keras.layers.MultiHeadAttention(num_heads=2, key_dim=16)(x, x)
+    x = keras.layers.Dense(32, kernel_regularizer=reg)(inp)
+    attn = keras.layers.MultiHeadAttention(num_heads=2, key_dim=16,
+                                           kernel_regularizer=reg, dropout=dropout)(x, x)
     x = keras.layers.LayerNormalization()(x + attn)
-    ff = keras.layers.Dense(32, activation="relu")(x)
+    ff = keras.layers.Dense(32, activation="relu", kernel_regularizer=reg)(x)
     x = keras.layers.LayerNormalization()(x + ff)
     x = keras.layers.GlobalAveragePooling1D()(x)
-    x = keras.layers.Dropout(0.2)(x)
-    return keras.Model(inp, keras.layers.Dense(1)(x))
+    x = keras.layers.Dropout(dropout)(x)
+    return keras.Model(inp, keras.layers.Dense(1, kernel_regularizer=reg)(x))
 
 
 BUILDERS = {"lstm": build_lstm, "gru": build_gru,
@@ -126,6 +149,10 @@ def main() -> int:
     ap.add_argument("--models", nargs="+", default=list(BUILDERS))
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--batch", type=int, default=256)
+    ap.add_argument("--no-tune", action="store_true",
+                    help="Skip the regularisation search and use a single "
+                         "unregularised configuration. Reproduces the "
+                         "untuned tier of the paper's three-tier comparison.")
     ap.add_argument("--garch", action="store_true",
                     help="Add the GARCH conditional SD as an input (hybrid).")
     args = ap.parse_args()
@@ -154,14 +181,26 @@ def main() -> int:
 
     rows = []
     for name in args.models:
-        keras.utils.set_random_seed(SEED)
         t0 = time.time()
-        model = BUILDERS[name]((SEQ_LEN, X.shape[-1]))
-        model.compile(optimizer=keras.optimizers.Adam(1e-3), loss="mse")
-        model.fit(Xs[tr], y[tr], validation_data=(Xs[va], y[va]),
-                  epochs=args.epochs, batch_size=args.batch, verbose=0,
-                  callbacks=[keras.callbacks.EarlyStopping(
-                      monitor="val_loss", patience=8, restore_best_weights=True)])
+        best = {"val_loss": np.inf}
+        grid = [(0.0, 0.2)] if args.no_tune else [
+            (l2, d) for l2 in L2_GRID for d in DROPOUT_GRID]
+        for l2, dropout in grid:
+            if True:
+                keras.utils.set_random_seed(SEED)
+                cand = BUILDERS[name]((SEQ_LEN, X.shape[-1]), l2, dropout)
+                cand.compile(optimizer=keras.optimizers.Adam(1e-3), loss="mse")
+                hist = cand.fit(
+                    Xs[tr], y[tr], validation_data=(Xs[va], y[va]),
+                    epochs=args.epochs, batch_size=args.batch, verbose=0,
+                    callbacks=[keras.callbacks.EarlyStopping(
+                        monitor="val_loss", patience=8, restore_best_weights=True)])
+                vl = float(np.min(hist.history["val_loss"]))
+                if vl < best["val_loss"]:
+                    best = {"val_loss": vl, "model": cand, "l2": l2, "dropout": dropout}
+        model = best["model"]
+        print(f"  {name:12s} selected l2={best['l2']:g} dropout={best['dropout']} "
+              f"(val loss {best['val_loss']:.3e})")
 
         pred = model.predict(Xs[te], verbose=0).ravel()
         yte = y[te]
@@ -185,7 +224,8 @@ def main() -> int:
 
         m = point_metrics(yte, pred)
         dm = dm_squared_error(yte[ok], pred[ok], r[ok])
-        rows.append({"model": model_name, **m,
+        rows.append({"model": model_name, "l2": best["l2"],
+                     "dropout": best["dropout"], **m,
                      "OOS_R2_pct": 100 * oos_r2(yte[ok], pred[ok], r[ok]),
                      "bias_in_true_sd": bias_sd, "dispersion_ratio": disp,
                      "scale_sane": sane,
@@ -196,10 +236,11 @@ def main() -> int:
               f"{'OK' if sane else 'SCALE FAILURE'}  ({rows[-1]['seconds']:.0f}s)")
 
     table = pd.DataFrame(rows)
-    out_path = TAB_DIR / f"v2_neural_metrics_{tag}.csv"
+    suffix = "untuned" if args.no_tune else "tuned"
+    out_path = TAB_DIR / f"v2_neural_metrics_{tag}_{suffix}.csv"
     table.to_csv(out_path, index=False)
 
-    show = ["model", "RMSE", "OOS_R2_pct", "DirAcc", "bias_in_true_sd",
+    show = ["model", "l2", "dropout", "RMSE", "OOS_R2_pct", "DirAcc",
             "dispersion_ratio", "scale_sane", "DM_p"]
     with pd.option_context("display.width", 220):
         print(f"\n{table[show].round(5).to_string(index=False)}")
