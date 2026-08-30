@@ -1,275 +1,164 @@
+# Forecasting Daily Returns of Large-Cap Technology Stocks (2016–2025)
 
-# Tech Stock Forecasting with GARCH Hybrids and Hierarchical Bayesian Models
+Where is the predictability in daily equity returns — in the conditional mean,
+or in the conditional variance?
 
-## Overview
+This repository holds the data pipeline, models and evaluation code for a study
+of eight large-cap US technology stocks over 2016–2025, spanning the COVID-19
+dislocation, the 2022 tightening cycle and the subsequent normalisation. It
+compares baseline, linear, tree, econometric and Bayesian forecasts of one-day-
+ahead returns, scoring them on point accuracy, probabilistic accuracy and
+interval calibration, with every headline comparison backed by a
+Diebold–Mariano test.
 
-This repository contains a reproducible research framework for forecasting daily returns and volatility of large-cap technology stocks. The project integrates econometric volatility modeling, deep learning architectures, hybrid GARCH–neural network approaches, and hierarchical Bayesian partial pooling across assets.
-
-The primary objective is to build a methodologically rigorous, publication-quality forecasting pipeline that:
-
-* Respects the time-ordered structure of financial data
-* Eliminates look-ahead bias and data leakage
-* Enables fair model comparison under walk-forward evaluation
-* Examines cross-asset generalization and uncertainty calibration
-* Produces reproducible experimental artifacts
-
-This repository is intended for educational and research purposes only. It does not constitute financial advice.
+For research and education only. Nothing here is investment advice.
 
 ---
 
-## Research Motivation
+## Headline findings
 
-Financial return series exhibit:
+**The conditional mean is not predictable at this horizon.** No model —
+ridge, random forest, or hierarchical Bayes — beats a per-ticker mean baseline
+on any of the eight stocks. Out-of-sample R² against that baseline is −0.001 for
+ridge and −0.003 for the random forest, and Diebold–Mariano cannot distinguish
+either from the baseline (p = 0.36 and p = 0.18).
 
-* Weak predictability in conditional means
-* Strong volatility clustering
-* Heavy-tailed behavior
-* Regime-dependent dynamics
+**The conditional variance is predictable, and it is where the value is.**
+All three GARCH-family specifications beat a 20-day rolling-variance benchmark
+under QLIKE at p < 0.001. Plain GARCH(1,1)-t wins; the asymmetric extensions add
+nothing detectable (GARCH vs EGARCH, p = 0.33).
 
-Traditional econometric models (e.g., GARCH) capture volatility persistence but are typically applied on a per-asset basis. Deep learning models capture nonlinear temporal dependencies but often lack interpretability and principled uncertainty estimation.
+**Calibration comes from the variance model, not the mean model.** Moving from
+a constant-variance Gaussian predictive to a GARCH-scaled one is worth 0.155
+nats of log score (p < 0.00001). Adding *any* conditional mean on top of that is
+worth 0.002 nats and is not statistically detectable (p = 0.06). A zero-mean
+forecast with a GARCH scale is as good as the full hierarchical Bayesian model.
 
-This project investigates:
-
-1. Whether hybrid GARCH–deep learning architectures improve predictive stability.
-2. Whether hierarchical Bayesian partial pooling improves cross-asset generalization.
-3. How different modeling paradigms compare under strict time-based evaluation.
-
----
-
-## Core Contributions
-
-This framework enables systematic comparison of:
-
-* **GARCH family models** (GARCH, EGARCH, GJR-GARCH)
-* **Deep sequence models** (GRU, LSTM)
-* **Hybrid models** (GARCH-feature + GRU/LSTM)
-* **Hierarchical Bayesian models** with partial pooling across stocks
-
-All models are evaluated using consistent walk-forward testing.
+**Non-stationary predictors fail silently across a regime break.** See below.
 
 ---
 
-## Methodological Standards
+## The extrapolation result
 
-This project follows strict research principles:
+An earlier version of this pipeline selected model inputs by dtype, which
+admitted three non-stationary level series (the S&P 500 index level, the
+effective federal funds rate, the 10-year yield). Standardised on 2016–2019
+moments and applied to 2023–2025, the S&P 500 level arrives at **z = +8.7**,
+with **100%** of test observations beyond three training standard deviations.
 
-* No random shuffling of time-series data
-* All predictors are properly lagged
-* Train/validation/test splits are defined by target date
-* Raw data is cached locally for reproducibility
-* Experiments are configuration-driven
-* Model outputs are stored as versioned artifacts
+Every model with an unbounded output head extrapolated along that axis. The
+LSTM's test predictions correlate with the S&P 500 level at r = 0.88 and imply a
++12% return every trading day for three years. Training error looked normal
+throughout and no exception was raised.
 
-These standards ensure experimental credibility and reproducibility.
+Replacing the levels with their stationary counterparts moves ridge from an
+out-of-sample R² of −0.044 to −0.001, and the random forest from −0.188 to
+−0.003. The failure and its repair are reported as a result, not hidden:
+`src/diagnostics/` contains the two audits, and their before/after outputs are
+committed under `stock_project/reports/tables/`.
 
 ---
 
-## Repository Structure
+## Repository layout
 
 ```
-.
-├── data/
-│   ├── raw/            # Cached raw data downloads
-│   └── processed/      # Cleaned panel dataset and splits
-├── notebooks/          # Step-by-step research notebooks
-├── src/
-│   ├── data/           # Data download and feature engineering
-│   ├── models/         # GARCH, deep learning, hybrid, and Bayesian models
-│   └── eval/           # Walk-forward evaluation and metrics
-├── reports/
-│   ├── figures/        # Saved plots for analysis and paper
-│   └── tables/         # Saved result tables (CSV/LaTeX)
-├── configs/            # Experiment configuration files
-└── paper/              # Paper outline and manuscript materials
+src/
+  data/build_panel_v2.py        panel construction from the declared feature set
+  features/dictionary.py        the explicit feature dictionary (see below)
+  models/garch.py               GARCH/GJR/EGARCH estimation with validation
+  models/hierarchical_bayes.py  horseshoe hierarchical Bayes sampler
+  eval/metrics.py               point, probabilistic and DM scoring
+  eval/protocol.py              fixed-origin and expanding-window protocols
+  eval/diagnostics.py           R-hat and ESS reporting
+  diagnostics/feature_drift.py      train-to-test drift audit
+  diagnostics/prediction_sanity.py  extrapolation audit on saved predictions
+  experiments/                  runnable experiments, one per model family
+
+stock_project/
+  data/processed/               panels (parquet)
+  reports/predictions_v2/       per-model predictions
+  reports/tables/               metrics, diagnostics and paper tables
+
+deep_analysis.ipynb             original exploratory notebooks, kept for
+stock_market_final.ipynb        provenance; superseded by src/
 ```
 
 ---
 
-## Installation
-
-### 1. Create a virtual environment
+## Quick start
 
 ```bash
-python -m venv .venv
-```
-
-Activate it:
-
-macOS/Linux:
-
-```bash
-source .venv/bin/activate
-```
-
-Windows PowerShell:
-
-```bash
-.venv\Scripts\Activate.ps1
-```
-
-### 2. Install dependencies
-
-Core dependencies:
-
-```bash
+python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Deep learning:
+Then, in order:
 
 ```bash
-pip install -r requirements-deep.txt
+python -m src.diagnostics.feature_drift               # audit the v1 panel
+python -m src.data.build_panel_v2                     # build the corrected panel
+python -m src.models.garch                            # re-estimate volatility features
+python -m src.experiments.run_baselines               # zero, ticker-mean, AR(1)
+python -m src.experiments.run_linear_tree             # ridge, random forest
+python -m src.experiments.run_volatility              # QLIKE comparison + DM tests
+python -m src.experiments.run_bayes                   # hierarchical Bayes
 ```
 
-Bayesian modeling:
-
-```bash
-pip install -r requirements-bayes.txt
-```
+Both diagnostics exit non-zero when they find a problem, so they can gate a
+pipeline. `src.models.garch` aborts rather than writing a column if any fit
+fails to converge.
 
 ---
 
-## Data Pipeline
+## Design decisions worth knowing
 
-### Download raw data
+**Features are declared, not inferred.** `src/features/dictionary.py` lists
+every model input by hand with its description, source, transform, the time at
+which it is observable, and a stationarity flag backed by an ADF test. Excluded
+candidates stay in the dictionary with the reason for exclusion. A column is a
+feature because it is listed, never because it happens to be numeric.
 
-```bash
-python -m src.data.download --config configs/default.yaml
-```
+**Two evaluation protocols, deliberately.** *Fixed origin* fits once on the
+training split and freezes everything. *Expanding window* refits monthly on all
+data whose `target_date` precedes the fold. The gap between them separates real
+forecast error from the artefact of freezing a scaler across a regime change.
+Verified: across all 36 folds no training row reaches into the month being
+scored, and both protocols score the identical 6,008 observations.
 
-This downloads:
+**GARCH parameters are estimated on training data only**, then held fixed and
+filtered forward, giving genuine one-step-ahead σ(t+1|t). The value stored at
+date *t* forecasts the same period as the target at date *t*.
 
-* Adjusted close prices for selected technology stocks
-* Market proxy (SPY)
-* VIX index
-* Macro series from FRED
-
-All data is saved under `data/raw/`.
-
----
-
-## Build the panel dataset
-
-```bash
-python -m src.data.build_panel --config configs/default.yaml
-```
-
-This produces:
-
-* `data/processed/panel.parquet`
-* `data/processed/audit_summary.csv`
-
-The dataset is structured as:
-
-Date × Ticker × Features × Target
-
-Targets are next-day log returns.
-All features are constructed to avoid look-ahead leakage.
+**Selection happens inside the posterior.** The Bayesian model places a
+horseshoe prior on the coefficients rather than pre-screening predictors by
+correlation with the target. Validated on synthetic data: 3 of 3 true signals
+recovered, 0 of 9 false positives.
 
 ---
 
-## Modeling Framework
+## Splits
 
-### Econometric Volatility Models
+| Split | Dates | Rows |
+|---|---|---|
+| Train | 2016-03-02 → 2019-12-30 | 7,720 |
+| Validation | 2019-12-31 → 2022-12-29 | 6,048 |
+| Test | 2022-12-30 → 2025-12-29 | 6,008 |
 
-* GARCH(1,1)
-* EGARCH
-* GJR-GARCH
-* Student-t innovations (where applicable)
-
-These models capture volatility clustering and asymmetric shock responses.
-
----
-
-### Deep Learning Models
-
-* GRU
-* LSTM
-
-These architectures model nonlinear temporal dependencies in returns.
+Tickers: AAPL, MSFT, AMZN, GOOGL, META, NVDA, TSLA, ORCL.
+Sources: Yahoo Finance (prices), FRED (DFF, DGS10, SP500, VIX).
 
 ---
 
-### Hybrid Models
+## Status
 
-Hybrid architectures integrate econometric volatility structure into neural models, including:
+Complete: data pipeline, diagnostics, baselines, linear and tree models,
+GARCH family, hierarchical Bayes with convergence diagnostics.
 
-* GARCH-derived volatility as input features
-* Mean–variance decomposition approaches (RNN mean + GARCH variance)
-
----
-
-### Hierarchical Bayesian Models
-
-Hierarchical models introduce partial pooling across assets:
-
-* Global parameters capture shared sector behavior
-* Asset-specific parameters capture idiosyncratic deviations
-* Borrowing strength improves generalization and stability
-* Provides interpretable parameter structure
-
----
-
-## Evaluation Strategy
-
-All models are evaluated using:
-
-* Walk-forward (rolling-origin) testing
-* Time-respecting splits
-* Out-of-sample metrics:
-
-  * MAE
-  * RMSE
-  * Out-of-sample R²
-* Volatility-specific metrics where applicable
-* Predictive interval coverage and log scores for probabilistic models
-
-Optional statistical comparisons may include Diebold–Mariano tests and regime-based analysis.
-
----
-
-## Project Roadmap
-
-Phase 1 — Data engineering and panel construction
-
-
-Phase 2 — GARCH family volatility modeling
-
-
-Phase 3 — Deep learning baselines (GRU/LSTM)
-
-
-Phase 4 — Hybrid GARCH–RNN models
-
-
-Phase 5 — Hierarchical Bayesian partial pooling
-
-
-Phase 6 — Walk-forward evaluation and comparative analysis
-
-
-Phase 7 — Paper drafting and reproducibility validation
-
----
-
-## Reproducibility Checklist
-
-* Deterministic time splits defined in configuration
-* All raw data stored locally after download
-* No future data used for feature construction
-* All model outputs saved to `reports/`
-* Configuration files version-controlled
+In progress: Student-t innovations, leave-one-ticker-out transfer, per-ticker
+result tables, calibration figures, neural network re-runs.
 
 ---
 
 ## License
 
-Add a license file before public distribution. The MIT License is recommended for open research repositories.
-
----
-
-## Disclaimer
-
-This repository is intended for academic and educational research.
-It does not provide investment advice or trading recommendations.
-
+MIT. See `LICENSE`.
