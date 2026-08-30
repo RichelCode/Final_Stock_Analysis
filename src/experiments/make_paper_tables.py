@@ -29,6 +29,30 @@ import pandas as pd
 
 from src.eval.metrics import dm_squared_error, oos_r2, point_metrics
 
+
+def benjamini_hochberg(p_values: np.ndarray, alpha: float = 0.05) -> np.ndarray:
+    """Benjamini-Hochberg step-up. Returns a boolean rejection mask.
+
+    One test per model-ticker pair means dozens of simultaneous tests, and at
+    the 5% level a handful of rejections is what chance alone produces. Any
+    claim of predictability for an individual ticker has to survive a
+    multiplicity correction, or it is an artefact of the number of tests.
+    """
+    p_values = np.asarray(p_values, dtype=float)
+    finite = np.isfinite(p_values)
+    reject = np.zeros(p_values.shape, dtype=bool)
+    if not finite.any():
+        return reject
+
+    idx = np.flatnonzero(finite)
+    order = idx[np.argsort(p_values[idx])]
+    m = order.size
+    thresholds = alpha * np.arange(1, m + 1) / m
+    passed = p_values[order] <= thresholds
+    if passed.any():
+        reject[order[: np.flatnonzero(passed)[-1] + 1]] = True
+    return reject
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PROJ = REPO_ROOT / "stock_project"
 PRED_DIR = PROJ / "reports" / "predictions_v2"
@@ -91,6 +115,17 @@ def main() -> int:
     TAB_DIR.mkdir(parents=True, exist_ok=True)
     frames = [per_ticker(p) for p in args.protocols]
     long = pd.concat(frames, ignore_index=True)
+
+    # Multiplicity correction across every model-ticker test, per protocol.
+    long["significant_bh"] = False
+    long["significant_bonferroni"] = False
+    for protocol in long["protocol"].unique():
+        m = (long["protocol"] == protocol) & (long["model"] != BASELINE)
+        sub = long.loc[m]
+        long.loc[m, "significant_bh"] = benjamini_hochberg(sub["DM_p"].to_numpy())
+        long.loc[m, "significant_bonferroni"] = (
+            sub["DM_p"].to_numpy() < 0.05 / max(len(sub), 1)
+        )
     long.to_csv(TAB_DIR / "v2_per_ticker_long.csv", index=False)
 
     for protocol in args.protocols:
@@ -107,12 +142,21 @@ def main() -> int:
         with pd.option_context("display.width", 220):
             print(wide.round(2).to_string())
 
-        wins = sub[sub["beats_baseline_5pct"]]
-        total = len(sub[sub["model"] != BASELINE])
-        print(f"\nmodel-ticker pairs beating the baseline at 5%: {len(wins)} of {total}")
-        for _, r in wins.iterrows():
-            print(f"  {r['model']} / {r['Ticker']}: "
-                  f"R2 = {r['OOS_R2_pct']:+.2f}%, DM p = {r['DM_p']:.4f}")
+        tested = sub[sub["model"] != BASELINE]
+        total = len(tested)
+        raw = tested[tested["beats_baseline_5pct"]]
+        bh = tested[tested["significant_bh"] & (tested["DM_stat"] < 0)]
+        bonf = tested[tested["significant_bonferroni"] & (tested["DM_stat"] < 0)]
+
+        print(f"\nTests run: {total} model-ticker pairs")
+        print(f"  beating the baseline, uncorrected p < 0.05 : {len(raw)}"
+              f"  (expected by chance: {0.05 * total:.1f})")
+        print(f"  surviving Benjamini-Hochberg FDR at 5%      : {len(bh)}")
+        print(f"  surviving Bonferroni at 5%                  : {len(bonf)}")
+        for _, r in raw.iterrows():
+            verdict = "SURVIVES correction" if r["significant_bh"] else "does not survive correction"
+            print(f"    {r['model']} / {r['Ticker']}: R2 = {r['OOS_R2_pct']:+.2f}%, "
+                  f"p = {r['DM_p']:.4f}  -> {verdict}")
 
     print(f"\nSaved: v2_per_ticker_long.csv and one wide table per protocol")
     return 0
