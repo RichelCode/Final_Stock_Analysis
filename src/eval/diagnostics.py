@@ -43,14 +43,21 @@ def convergence_report(table: pd.DataFrame) -> dict:
     worst_rhat_row = table.loc[rhat.idxmax()] if rhat.notna().any() else None
     worst_ess_row = table.loc[ess_bulk.idxmin()] if ess_bulk.notna().any() else None
 
+    # A parameter sampled on a discrete grid can have zero within-chain
+    # variance, which makes R-hat undefined. pandas.max() skips NaN silently,
+    # so count them explicitly rather than letting them pass as a clean result.
+    n_rhat_undefined = int(rhat.isna().sum())
+
     return {
         "max_rhat": float(rhat.max()),
+        "n_rhat_undefined": n_rhat_undefined,
         "max_rhat_parameter": None if worst_rhat_row is None else worst_rhat_row["parameter"],
         "min_ess_bulk": float(ess_bulk.min()),
         "min_ess_bulk_parameter": None if worst_ess_row is None else worst_ess_row["parameter"],
         "min_ess_tail": float(ess_tail.min()),
         "n_parameters": len(table),
         "rhat_ok": bool(rhat.max() < RHAT_THRESHOLD),
+        "undefined_parameters": table.loc[rhat.isna(), "parameter"].tolist(),
         "ess_ok": bool(ess_bulk.min() > ESS_THRESHOLD and ess_tail.min() > ESS_THRESHOLD),
     }
 
@@ -64,3 +71,7 @@ def print_report(report: dict) -> None:
           f"({report['min_ess_bulk_parameter']})  threshold > {ESS_THRESHOLD:.0f}  [{ess_mark}]")
     print(f"  min ESS tail {report['min_ess_tail']:.0f}")
     print(f"  parameters monitored: {report['n_parameters']}")
+    if report.get("n_rhat_undefined"):
+        names = ", ".join(report["undefined_parameters"][:5])
+        print(f"  R-hat undefined for {report['n_rhat_undefined']} parameter(s): {names}"
+              f"  (zero within-chain variance, expected for grid-sampled quantities)")

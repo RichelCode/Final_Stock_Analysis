@@ -48,6 +48,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.special import gammaln
 
 
 def _inv_gamma(rng: np.random.Generator, shape, scale):
@@ -71,6 +72,9 @@ class Posterior:
     # Diagonal of X'WX, the data's information about each coefficient. Needed to
     # express shrinkage as a fraction rather than as a raw prior variance.
     xtwx_diag: np.ndarray | None = None
+    # Student-t degrees of freedom, one draw per retained iteration.
+    # None when the model was fitted with Gaussian innovations.
+    nu: np.ndarray | None = None
 
     def stacked(self, name: str) -> np.ndarray:
         return getattr(self, name)
@@ -96,13 +100,31 @@ def gibbs_chain(
     a_s: float = 2.0,
     b_s: float = 1e-4,
     init_scale: float = 1.0,
+    dist: str = "normal",
+    nu_grid: np.ndarray | None = None,
 ) -> dict[str, np.ndarray]:
     """Run one chain. `init_scale` disperses the starting point across chains."""
     rng = np.random.default_rng(seed)
     n, p = X.shape
 
+    if dist not in {"normal", "t"}:
+        raise ValueError(f"dist must be 'normal' or 't', got {dist!r}")
+
     sigma = np.maximum(np.asarray(sigma, dtype=float), 1e-8)
-    w = 1.0 / sigma**2                       # known observation precisions
+    sigma2 = sigma**2
+
+    # Student-t as a scale mixture of normals: y ~ N(mu, s^2 sigma^2 / omega)
+    # with omega ~ Gamma(nu/2, nu/2) gives y ~ t_nu(mu, s^2 sigma^2) marginally.
+    # omega is the per-observation "weirdness" scale: small omega widens that
+    # day's density, which is how a crash day stops dragging the whole fit.
+    omega = np.ones(n)
+    if nu_grid is None:
+        # Below 2 the variance is undefined; above ~100 the t is Gaussian for
+        # any practical purpose.
+        nu_grid = np.array([2.1, 2.5, 3, 4, 5, 6, 7, 8, 10, 12, 15, 20, 30, 50, 100.0])
+    df = 8.0   # Student-t degrees of freedom (distinct from the horseshoe nu)
+
+    w = omega / sigma2
     sqrt_w = np.sqrt(w)
     Xw = X * sqrt_w[:, None]
     XtWX = Xw.T @ Xw
@@ -118,14 +140,25 @@ def gibbs_chain(
     s2 = 1.0 * init_scale
     lambda2 = np.ones(p)
     tau_b2 = 1.0
-    nu = np.ones(p)
+    nu = np.ones(p)   # horseshoe local auxiliary (Makalic & Schmidt)
     xi = 1.0
     a_aux = 1.0   # auxiliary variable for the half-Cauchy prior on tau_a
 
     keep = {k: [] for k in
             ("beta", "alpha", "mu_alpha", "tau_a2", "s2", "tau_b2", "lambda2")}
+    if dist == "t":
+        keep["nu"] = []
 
     for it in range(n_iter):
+        if dist == "t":
+            # The weights depend on omega, so the weighted cross-product has to
+            # be rebuilt each sweep. It is only p x p, so the cost is small.
+            w = omega / sigma2
+            sqrt_w = np.sqrt(w)
+            Xw = X * sqrt_w[:, None]
+            XtWX = Xw.T @ Xw
+            group_w = np.array([w[idx].sum() for idx in group_idx])
+
         # ---- beta | rest, horseshoe prior precision on the diagonal ---------
         resid = y - alpha[g]
         XtWr = Xw.T @ (resid * sqrt_w)
@@ -167,6 +200,23 @@ def gibbs_chain(
         rss = float(np.sum(w * (y - mu_vec) ** 2))
         s2 = max(_inv_gamma(rng, a_s + n / 2.0, b_s + 0.5 * rss), 1e-12)
 
+        # ---- omega_it and df | rest (Student-t only) ------------------------
+        if dist == "t":
+            resid2 = (y - (alpha[g] + X @ beta)) ** 2 / (s2 * sigma2)
+            omega = rng.gamma(shape=(df + 1.0) / 2.0,
+                              scale=2.0 / (df + resid2))
+            omega = np.maximum(omega, 1e-10)
+
+            # df by griddy Gibbs: its conditional given omega is one-dimensional,
+            # so the exact normalised distribution over the grid is cheap.
+            sum_log_om, sum_om = float(np.log(omega).sum()), float(omega.sum())
+            half = nu_grid / 2.0
+            logp = (n * (half * np.log(half) - gammaln(half))
+                    + (half - 1.0) * sum_log_om - half * sum_om)
+            logp -= logp.max()
+            probs = np.exp(logp)
+            df = float(rng.choice(nu_grid, p=probs / probs.sum()))
+
         # ---- horseshoe: lambda_j, nu_j, tau_b, xi ---------------------------
         # Makalic & Schmidt (2016): each half-Cauchy becomes a pair of
         # conditionally inverse-gamma draws, so the whole block is conjugate.
@@ -186,6 +236,8 @@ def gibbs_chain(
             keep["s2"].append(s2)
             keep["tau_b2"].append(tau_b2)
             keep["lambda2"].append(lambda2.copy())
+            if dist == "t":
+                keep["nu"].append(df)
 
     out = {k: np.asarray(v) for k, v in keep.items()}
     out["_xtwx_diag"] = np.diag(XtWX)
@@ -203,6 +255,7 @@ def fit(
     burn: int = 2000,
     thin: int = 1,
     seed: int = 0,
+    dist: str = "normal",
     **kwargs,
 ) -> Posterior:
     """Run `n_chains` independent chains from dispersed starting points."""
@@ -217,6 +270,7 @@ def fit(
             # the global horseshoe scale into a region it takes thousands of
             # iterations to leave.
             init_scale=float(3.0 ** (c - (n_chains - 1) / 2.0)),
+            dist=dist,
             **kwargs,
         ))
 
@@ -232,6 +286,31 @@ def fit(
 # --------------------------------------------------------------------------
 # posterior predictive
 # --------------------------------------------------------------------------
+def predictive_df(post: Posterior) -> float:
+    """Degrees of freedom of the predictive density; inf for Gaussian innovations."""
+    return float(post.nu.mean()) if post.nu is not None else float("inf")
+
+
+def _predictive_scale(post: Posterior, sigma: np.ndarray, var_param: np.ndarray) -> np.ndarray:
+    """Scale parameter of the predictive density, carrying parameter uncertainty.
+
+    Under Gaussian innovations the scale is the SD, so the two variance
+    components simply add.
+
+    Under Student-t innovations the model is y ~ N(mu, s^2 sigma^2 / omega) with
+    omega ~ Gamma(df/2, df/2), so marginally y ~ t_df(mu, s^2 sigma^2): the
+    quantity s^2 sigma^2 is the squared *scale*, not the variance, and the
+    variance is scale^2 * df/(df-2). Parameter uncertainty arrives as a variance
+    and so has to be converted into scale units before being added, otherwise
+    the two are on different footings.
+    """
+    noise_scale2 = post.s2.mean() * sigma**2
+    df = predictive_df(post)
+    if not np.isfinite(df):
+        return np.sqrt(var_param + noise_scale2)
+    return np.sqrt(noise_scale2 + var_param * (df - 2.0) / df)
+
+
 def predict_seen(X: np.ndarray, g: np.ndarray, sigma: np.ndarray, post: Posterior):
     """Predictive mean and SD for tickers present in the training sample.
 
@@ -243,10 +322,8 @@ def predict_seen(X: np.ndarray, g: np.ndarray, sigma: np.ndarray, post: Posterio
     sigma = np.maximum(sigma, 1e-8)
     mu_draws = post.alpha[:, g] + post.beta @ X.T          # (D, n)
     mean = mu_draws.mean(axis=0)
-
     var_param = mu_draws.var(axis=0)                       # uncertainty in the mean
-    var_noise = post.s2.mean() * sigma**2                  # expected observation noise
-    return mean, np.sqrt(var_param + var_noise), mu_draws
+    return mean, _predictive_scale(post, sigma, var_param), mu_draws
 
 
 def predict_unseen(X: np.ndarray, sigma: np.ndarray, post: Posterior):
@@ -260,11 +337,9 @@ def predict_unseen(X: np.ndarray, sigma: np.ndarray, post: Posterior):
     sigma = np.maximum(sigma, 1e-8)
     mu_draws = post.beta @ X.T + post.mu_alpha[:, None]    # (D, n)
     mean = mu_draws.mean(axis=0)
-
-    var_param = mu_draws.var(axis=0)
-    var_new_alpha = post.tau_a2.mean()
-    var_noise = post.s2.mean() * sigma**2
-    return mean, np.sqrt(var_param + var_new_alpha + var_noise), mu_draws
+    # A new ticker's alpha is unknown, so its population variance is added.
+    var_param = mu_draws.var(axis=0) + post.tau_a2.mean()
+    return mean, _predictive_scale(post, sigma, var_param), mu_draws
 
 
 def inclusion_summary(post: Posterior, feature_names: list[str]):
