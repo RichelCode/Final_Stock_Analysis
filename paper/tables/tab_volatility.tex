@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{Volatility forecast comparison on an identical sample of 6008 test observations, scored by QLIKE against the squared return. $p$-values are Diebold--Mariano against the rolling-variance benchmark with a Newey--West HAC variance. $^{***}$, $^{**}$, $^{*}$ denote 1\%, 5\% and 10\%.}
+\label{tab:volatility}
+\begin{tabular}{l S[table-format=-1.4] S[table-format=1.2e-1] c}
+\toprule
+Specification & {QLIKE} & {MSE vs proxy} & {DM $p$} \\
+\midrule
+GARCH(1,1)-$t$ & -6.5361 & 5.56e-06 & 0.0000$^{***}$ \\
+EGARCH(1,1)-$t$ & -6.5100 & 5.38e-06 & 0.0009$^{***}$ \\
+GJR-GARCH(1,1)-$t$ & -6.5035 & 5.44e-06 & 0.0005$^{***}$ \\
+Rolling variance (20d) & -6.4000 & 5.66e-06 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}

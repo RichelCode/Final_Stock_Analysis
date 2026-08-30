@@ -1,0 +1,39 @@
+\begin{table}[htbp]
+\centering
+\small
+\caption{Feature dictionary. Every model input is declared here; a column is a feature because it is listed, not because it is numeric. Stationarity is from augmented Dickey--Fuller tests. All retained features are observable at the close of $t$, and the target is the return from $t$ to $t+1$.}
+\label{tab:features}
+\begin{tabular}{l l l p{0.36\linewidth}}
+\toprule
+Feature & Family & Status & Note \\
+\midrule
+ret & own return & Retained & Own log return realised on day t \\
+ret\_lag1 & own return & Retained & Own log return on day t-1 \\
+ret\_lag2 & own return & Retained & Own log return on day t-2 \\
+ret\_lag3 & own return & Retained & Own log return on day t-3 \\
+ret\_lag5 & own return & Retained & Own log return on day t-5 \\
+ret\_lag10 & own return & Retained & Own log return on day t-10 \\
+ret\_vol5 & own volatility & Retained & Trailing 5-day SD of own returns through t \\
+ret\_vol10 & own volatility & Retained & Trailing 10-day SD of own returns through t \\
+ret\_vol20 & own volatility & Retained & Trailing 20-day SD of own returns through t \\
+mkt\_ret\_lag1 & market & Retained & Market proxy (SPY) log return, most recent close \\
+vix\_log\_lag1 & uncertainty & Retained & Log of the CBOE VIX at the most recent close \\
+vix\_ret\_lag1 & uncertainty & Retained & Log change in VIX at the most recent close \\
+DFF\_diff\_lag1 & macro & Retained & Daily change in the effective federal funds rate \\
+DGS10\_diff\_lag1 & macro & Retained & Daily change in the 10-year Treasury yield \\
+garch11\_t\_sigma1 & garch & Retained & GARCH(1,1)-t one-step-ahead conditional SD for t+1 \\
+\midrule
+SP500\_lag1 & macro & Excluded & Non-stationary level (ADF p=0.99). Test-window mean sits at z=+8.73 under training moments and 100\% of test rows exce... \\
+DFF\_lag1 & macro & Excluded & Non-stationary level (ADF p=0.83). Test-window mean at z=+4.72, 100\% of test rows beyond 3 training SDs. Replaced by ... \\
+DGS10\_lag1 & macro & Excluded & Non-stationary level (ADF p=0.80). Test-window mean at z=+3.86, 85\% of test rows beyond 3 training SDs. Replaced by D... \\
+vix\_level\_lag1 & uncertainty & Excluded & Stationary, but superseded by its log transform vix_log_lag1. \\
+ret\_t & own return & Excluded & Bit-identical to `ret` (max absolute difference 0.0). Exact duplicate. \\
+sp500\_ret\_lag1 & market & Excluded & Correlates 0.9985 with mkt_ret_lag1; the two measure the same quantity. Retaining both inflates collinearity and makes... \\
+garch11\_t\_var1 & garch & Excluded & Square of garch11_t_sigma1; redundant. \\
+gjr11\_t\_sigma1 & garch & Excluded & Held back for the volatility-model robustness check rather than entered alongside garch11_t_sigma1, with which it is n... \\
+gjr11\_t\_var1 & garch & Excluded & Square of gjr11_t_sigma1; redundant. \\
+egarch11\_t\_sigma1 & garch & Excluded & Training-split fit diverged: values reach 1e+148 and the training SD is infinite. Excluded pending re-estimation. \\
+egarch11\_t\_var1 & garch & Excluded & Square of a diverged fit; training SD is infinite. \\
+\bottomrule
+\end{tabular}
+\end{table}

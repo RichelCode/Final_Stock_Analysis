@@ -1,0 +1,16 @@
+\begin{table}[htbp]
+\centering
+\caption{Cross-asset transfer, averaged over the eight held-out tickers. At $k=0$ the held-out ticker's intercept is integrated over its population distribution; at $k>0$ its last $k$ training days are revealed and the model refitted.}
+\label{tab:transfer}
+\begin{tabular}{S[table-format=3.0] S[table-format=1.5] S[table-format=1.5] S[table-format=1.5] S[table-format=1.5]}
+\toprule
+{$k$ days} & {RMSE} & {Log score} & {CRPS} & {Coverage 90\%} \\
+\midrule
+0 & 0.02362 & 2.47267 & 0.01214 & 0.87184 \\
+20 & 0.02362 & 2.47240 & 0.01214 & 0.87184 \\
+60 & 0.02362 & 2.47235 & 0.01214 & 0.87150 \\
+120 & 0.02362 & 2.47220 & 0.01214 & 0.87200 \\
+250 & 0.02362 & 2.47221 & 0.01214 & 0.87150 \\
+\bottomrule
+\end{tabular}
+\end{table}

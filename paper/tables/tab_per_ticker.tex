@@ -1,0 +1,21 @@
+\begin{table}[htbp]
+\centering
+\caption{Out-of-sample $R^2$ (\%) against the per-ticker mean baseline, test window 2023--2025, $n=751$ per ticker. No entry is significant after multiplicity correction across the 48 model--ticker Diebold--Mariano tests.}
+\label{tab:per-ticker}
+\begin{tabular}{l S[table-format=-2.2] S[table-format=-2.2] S[table-format=-2.2] S[table-format=-2.2] S[table-format=-2.2] S[table-format=-2.2]}
+\toprule
+Ticker & AR(1), per ticker & Zero & Hierarchical Bayes (t) & Hierarchical Bayes (t) & Random forest, pooled & Ridge, pooled \\
+\midrule
+AAPL & 0.24 & -0.38 & -0.73 & -0.40 & -0.64 & -0.95 \\
+AMZN & -0.00 & -0.45 & -0.10 & 0.12 & -0.19 & 0.08 \\
+GOOGL & 0.01 & -0.47 & -0.23 & 0.08 & -1.31 & -0.40 \\
+META & 0.08 & -0.46 & 0.07 & 0.40 & -0.73 & 0.14 \\
+MSFT & -1.56 & -0.42 & -0.27 & -0.07 & -0.55 & -0.23 \\
+NVDA & 0.37 & -1.00 & -0.25 & 0.72 & -0.09 & -0.25 \\
+ORCL & 0.01 & -0.12 & 0.05 & 0.03 & -0.02 & 0.13 \\
+TSLA & 0.02 & -0.15 & -0.03 & 0.21 & -0.23 & -0.03 \\
+\midrule
+\textbf{Mean} & -0.10 & -0.43 & -0.19 & 0.13 & -0.47 & -0.19 \\
+\bottomrule
+\end{tabular}
+\end{table}
