@@ -1,0 +1,4 @@
+# Deep-learning dependencies, needed only for src.experiments.run_neural.
+# Install on top of requirements.txt.
+
+tensorflow==2.21.0
