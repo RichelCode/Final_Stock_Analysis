@@ -37,7 +37,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from scipy import stats
+from scipy import special, stats
 
 SQRT_PI = np.sqrt(np.pi)
 
@@ -97,6 +97,70 @@ def crps_gaussian(y_true, mu, sigma) -> np.ndarray:
     s = np.maximum(np.asarray(sigma, dtype=float).ravel(), 1e-12)
     z = (y - m) / s
     return s * (z * (2 * stats.norm.cdf(z) - 1) + 2 * stats.norm.pdf(z) - 1.0 / SQRT_PI)
+
+
+def log_score_t(y_true, mu, scale, df) -> np.ndarray:
+    """Pointwise Student-t log predictive density. Higher is better.
+
+    `scale` is the distribution's scale parameter, not its standard deviation.
+    A t with df degrees of freedom has SD = scale * sqrt(df / (df - 2)).
+    """
+    y = np.asarray(y_true, dtype=float).ravel()
+    m = np.asarray(mu, dtype=float).ravel()
+    sc = np.maximum(np.asarray(scale, dtype=float).ravel(), 1e-12)
+    return stats.t.logpdf(y, df=df, loc=m, scale=sc)
+
+
+def crps_t(y_true, mu, scale, df) -> np.ndarray:
+    """Pointwise CRPS for a Student-t predictive distribution. Lower is better.
+
+    Closed form from Jordan, Kruger & Lerch (2019). Requires df > 1.
+    """
+    if df <= 1:
+        raise ValueError(f"CRPS for a Student-t requires df > 1 (got {df}).")
+
+    y = np.asarray(y_true, dtype=float).ravel()
+    m = np.asarray(mu, dtype=float).ravel()
+    sc = np.maximum(np.asarray(scale, dtype=float).ravel(), 1e-12)
+    z = (y - m) / sc
+
+    # The final term is constant in z and centres the score.
+    const = (2.0 * np.sqrt(df) / (df - 1.0)) * (
+        special.beta(0.5, df - 0.5) / special.beta(0.5, df / 2.0) ** 2
+    )
+    return sc * (
+        z * (2.0 * stats.t.cdf(z, df) - 1.0)
+        + 2.0 * stats.t.pdf(z, df) * (df + z**2) / (df - 1.0)
+        - const
+    )
+
+
+def coverage_t(y_true, mu, scale, df, level: float = 0.90) -> float:
+    y = np.asarray(y_true, dtype=float).ravel()
+    m = np.asarray(mu, dtype=float).ravel()
+    sc = np.maximum(np.asarray(scale, dtype=float).ravel(), 1e-12)
+    q = stats.t.ppf(0.5 + level / 2.0, df)
+    return float(np.mean((y >= m - q * sc) & (y <= m + q * sc)))
+
+
+def pit_t(y_true, mu, scale, df) -> np.ndarray:
+    y = np.asarray(y_true, dtype=float).ravel()
+    m = np.asarray(mu, dtype=float).ravel()
+    sc = np.maximum(np.asarray(scale, dtype=float).ravel(), 1e-12)
+    return stats.t.cdf(y, df=df, loc=m, scale=sc)
+
+
+def probabilistic_metrics_t(y_true, mu, scale, df,
+                            levels=(0.50, 0.80, 0.90, 0.95)) -> dict:
+    out = {
+        "n": int(np.asarray(y_true).size),
+        "df": float(df),
+        "logscore": float(np.mean(log_score_t(y_true, mu, scale, df))),
+        "CRPS": float(np.mean(crps_t(y_true, mu, scale, df))),
+    }
+    for lv in levels:
+        out[f"coverage_{int(lv * 100)}"] = coverage_t(y_true, mu, scale, df, lv)
+    return out
 
 
 def coverage(y_true, mu, sigma, level: float = 0.90) -> float:
