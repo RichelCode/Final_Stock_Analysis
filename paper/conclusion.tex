@@ -3,25 +3,30 @@
 \section{Conclusion and Recommendations}
 \label{sec:conclusion}
 
-This study asked where the predictability in daily large-capitalisation
-technology equity returns resides, and answered it by decomposing a predictive
-distribution into the parts a forecaster can actually control.
+This study developed and evaluated a hierarchical Bayesian model for the
+predictive distribution of daily large-capitalisation technology equity returns,
+and established which of its components carries the improvement.
 
-The conditional mean is not one of them. Across eight assets, six model classes
-and two evaluation protocols, nothing improves on a per-ticker historical
-average. Zero of 48 model--ticker tests survive multiplicity correction, and the
-count of uncorrected rejections falls below what chance alone produces. When
-four sequence architectures are permitted to choose their own regularisation on
-held-out data, all four choose to discard the predictors entirely and forecast a
-constant. The result is not that flexible models fail to find the signal; it is
-that, offered a fair choice, they decline to look for it.
+The model performs well on the criterion it was built for. It attains the best
+logarithmic score and continuous ranked probability score among the
+specifications considered, improving on a ridge-plus-GARCH benchmark by $0.126$
+nats ($p<0.00001$), and reduces mean absolute interval-coverage error to $0.022$
+from $0.030$. Partial pooling supplies a capability that per-asset models cannot:
+for an asset excluded from estimation entirely, the model still produces
+intervals attaining $87\%$ coverage at the $90\%$ nominal level, with a
+logarithmic score within $0.005$ nats of the same model fitted with that asset
+included.
 
-The conditional variance is a different matter. All three GARCH-family
-specifications beat a rolling-variance benchmark at $p<0.001$, and the
-conditional variance accounts for $54\%$ of the total gain in log predictive
-density over a null forecast. A further $45\%$ comes from the shape of the
-predictive distribution---Student-$t$ innovations and a scale calibrated on
-validation data. The conditional mean accounts for $0.7\%$.
+Decomposing the gain over a null forecast locates its source. The conditional
+variance contributes $54\%$ and the shape of the predictive distribution a
+further $45\%$, while the conditional mean contributes $0.7\%$---statistically
+detectable and economically negligible. The last figure is consistent with the
+out-of-sample evidence of \citet{welch2008comprehensive} and the episodic
+predictability of \citet{timmermann2008elusive}, which our own point-accuracy
+results reproduce: no specification, including four sequence architectures
+permitted to select their own regularisation, improves on a per-ticker
+historical average. That is the empirical reason the model devotes its structure
+to the scale and the shape rather than to the mean.
 
 \subsection{Recommendations for practice}
 
@@ -61,7 +66,7 @@ Section~\ref{sec:transfer} should be read as evidence about large-capitalisation
 technology equities rather than about equities generally.
 
 GARCH parameters are estimated once on the training block and then held fixed.
-This is conservative and avoids look-ahead, but Section~\ref{sec:calibration-results}
+This is conservative and avoids look-ahead, but Section~\ref{sec:density}
 shows it also understates later volatility by roughly twelve percent. Rolling
 re-estimation is the obvious extension and is not attempted here.
 
@@ -97,5 +102,5 @@ feature dictionary, volatility estimation, the Bayesian sampler, both evaluation
 protocols, all scoring rules and every figure and table in this
 paper---is released with pinned dependencies. Two audit scripts are included
 that exit non-zero when they detect the predictor-drift and prediction-scale
-failures described in Section~\ref{sec:extrapolation}, so that the defect which
+failures described in Section~\ref{sec:pitfall}, so that the defect which
 invalidated the earlier analysis cannot recur silently.

@@ -14,9 +14,8 @@
 \graphicspath{{../stock_project/reports/figures_v2/}}
 \bibliographystyle{plainnat}
 
-\title{\bfseries Where the Predictability Is: Conditional Variance, Not
-Conditional Mean, Delivers Calibrated Daily Return Forecasts for Large-Cap
-Technology Stocks, 2016--2025}
+\title{\bfseries A GARCH-Scaled Hierarchical Bayesian Model for Calibrated
+Daily Return Densities: Evidence from Large-Cap Technology Stocks, 2016--2025}
 
 \author[1]{R.\,O.\ Attafuah}
 \author[2]{B.\,A.\ Adjei}
@@ -31,33 +30,44 @@ Technology Stocks, 2016--2025}
 
 \begin{abstract}
 \noindent
-We ask where the predictability in daily large-capitalisation technology equity
-returns resides, using a panel of eight United States stocks over 2016--2025 and
-a held-out window spanning the 2022--2023 monetary tightening cycle. Six model
-classes---baselines, ridge, random forests, GARCH-family volatility models, four
-sequence architectures and a hierarchical Bayesian regression with a horseshoe
-prior---are estimated on one macro-financial information set and scored on point
-accuracy, probabilistic accuracy and interval calibration, with every comparison
-tested by Diebold--Mariano. We find no conditional-mean predictability: zero of
-48 model--ticker tests survive multiplicity correction, and when the sequence
-models are permitted to select their own regularisation on held-out data all
-four discard the predictors and forecast a constant. The conditional variance
-behaves differently: all three GARCH specifications beat a rolling-variance
-benchmark at $p<0.001$. Decomposing the gain in log predictive density over a
-null forecast, the conditional variance contributes $54\%$ and the shape of the
-predictive distribution a further $45\%$, while the conditional mean contributes
-$0.7\%$---statistically detectable at $p=0.029$ and economically negligible.
-Student-$t$ innovations with a validation-calibrated scale reduce mean absolute
-coverage error to $0.022$, and partial pooling yields usable intervals for an
-asset with no estimation history. We also document a silent failure mode:
-standardising non-stationary macroeconomic levels on a fixed origin sends
-held-out inputs to $8.7$ training standard deviations and produces out-of-sample
-$R^2$ as low as $-10\,425\%$ with no error raised. All code, audits and pinned
-dependencies are released.
+Forecasts of daily equity returns are usually evaluated on point accuracy, yet
+most practical uses---risk limits, position sizing, option pricing---require a
+predictive \emph{distribution}. We develop and evaluate a hierarchical Bayesian
+model that supplies one. The specification treats a GARCH(1,1)-$t$ conditional
+standard deviation as a known observation scale, pools intercepts across assets,
+places a horseshoe prior on the mean coefficients so that predictor selection
+occurs inside the posterior, and uses Student-$t$ innovations with a scale
+calibrated on validation data. Estimation is by blocked Gibbs sampling with all
+conditionals in closed form; the sampler recovers known parameters on synthetic
+data and satisfies standard convergence diagnostics.
+
+On a balanced panel of eight large-capitalisation United States technology
+stocks over 2016--2025, evaluated on a held-out window spanning the 2022--2023
+monetary tightening cycle, the model attains the best logarithmic score and
+continuous ranked probability score among all specifications considered,
+improving on a ridge-plus-GARCH benchmark by $0.126$ nats
+($p<0.00001$), and reduces mean absolute interval-coverage error to $0.022$ from
+$0.030$. Partial pooling delivers a further practical benefit: for an asset
+excluded from estimation entirely, the model still produces intervals attaining
+$87\%$ coverage at the $90\%$ nominal level, with a logarithmic score within
+$0.005$ nats of the same model estimated with that asset included.
+
+Decomposing the gain in predictive density over a null forecast shows where the
+value originates: the conditional variance contributes $54\%$ and the shape of
+the predictive distribution a further $45\%$, while the conditional mean
+contributes $0.7\%$. Consistent with the out-of-sample evidence of Welch and
+Goyal (2008) and Timmermann (2008), no specification improves on a per-ticker
+historical average for the conditional mean, which is precisely why modelling
+effort at this horizon is better directed at the second moment and the
+distributional shape. We additionally document a silent failure mode:
+standardising non-stationary macroeconomic levels on a fixed estimation origin
+sends held-out inputs to $8.7$ training standard deviations and produces
+out-of-sample $R^2$ as low as $-10\,425\%$ with no error raised. All code, audit
+scripts and pinned dependencies are released.
 \end{abstract}
 
-\noindent\textbf{Keywords:} return predictability; forecast calibration;
-GARCH; hierarchical Bayesian models; distribution shift
+\noindent\textbf{Keywords:} density forecasting; forecast calibration;
+hierarchical Bayesian models; GARCH; cross-asset transfer
 
 \input{introduction}
 \input{literature}

@@ -37,55 +37,60 @@ therefore not whether such variables carry information, but how they should ente
 the forecasting model and how the resulting predictive uncertainty should be
 quantified.
 
-This paper addresses that question by decomposing the problem rather than by
-running a horse race. A predictive distribution for a daily return has a
-location, a scale and a shape, and a forecaster can invest effort in any of the
-three. We ask which investment pays.
+This paper approaches that question constructively. Most practical uses of a
+return forecast---setting a risk limit, sizing a position, pricing an
+option---require a predictive \emph{distribution} rather than a point estimate,
+yet the forecasting literature is dominated by evaluations of conditional-mean
+accuracy. We develop a model that supplies a calibrated distribution, and we
+establish which of its components does the work.
 
-The design is a controlled comparison on a balanced panel of eight large-cap
+The specification is a hierarchical Bayesian regression with four features. It
+treats a GARCH(1,1)-$t$ conditional standard deviation as a \emph{known}
+observation-level scale, so the model does not have to relearn volatility
+clustering and a single scalar measures whether that scale is correctly sized.
+It pools intercepts across assets, which allows an asset absent from estimation
+to be forecast by integrating its intercept over the population distribution. It
+places a horseshoe prior \citep{carvalho2010horseshoe} on the mean coefficients,
+so that predictor selection occurs inside the posterior with uncertainty
+attached rather than as a screening step beforehand. And it uses Student-$t$
+innovations with a scale calibrated on validation data, which separates
+tail behaviour from scale. Estimation is by blocked Gibbs sampling with every
+conditional in closed form.
+
+The evaluation is a controlled comparison on a balanced panel of eight large-cap
 technology stocks over 2016--2025, with the effective federal funds rate, the
-ten-year Treasury yield, the VIX and a market proxy serving as macro-financial
-conditioning information. Six model classes are estimated on one identical
-feature set: naive baselines, pooled ridge, a pooled random forest, three
-GARCH-family volatility specifications, four sequence architectures, and a
-hierarchical Bayesian regression that treats the GARCH conditional standard
-deviation as a known observation scale and places a horseshoe prior on the mean
-coefficients. All are fitted on a chronological training sample and evaluated on
-a strictly held-out window spanning the tightening cycle and its aftermath, so
-that out-of-sample performance is measured across materially different
-volatility regimes. Point accuracy is assessed by root mean squared error and
-out-of-sample $R^2$ against a per-ticker mean benchmark; probabilistic adequacy
-by logarithmic score, continuous ranked probability score and the calibration of
-predictive intervals. Every comparison is tested by Diebold--Mariano rather than
-ranked.
+ten-year Treasury yield, the VIX and a market proxy as macro-financial
+conditioning information. Competing specifications---naive baselines, pooled
+ridge, a pooled random forest, three GARCH-family volatility models and four
+sequence architectures---are estimated on an identical feature set and scored on
+a strictly held-out window spanning the tightening cycle and its aftermath.
+Point accuracy is assessed by root mean squared error and out-of-sample $R^2$;
+probabilistic adequacy by logarithmic score, continuous ranked probability score
+and interval calibration. Every comparison is tested by Diebold--Mariano rather
+than ranked.
 
-Two features of the problem motivate this design. First, at the daily horizon the
-signal-to-noise ratio in equity returns is low, and differences in point accuracy
-across competing model classes are typically negligible; an evaluation confined
-to point forecasts therefore yields an incomplete and potentially misleading
-ordering. Second, the model classes that dominate the recent forecasting
-literature---tree ensembles and recurrent neural networks---produce predictions
-without an accompanying probability model, and so cannot state how much
-confidence a forecast warrants or how that confidence should contract when the
-market moves from a calm to a turbulent state \citep{chandra2021bayesian,
-wong2024quantifying}.
-
-Our findings are largely negative on the first moment and positive on the
-second. No model class improves on a per-ticker historical average, and the
-result survives disaggregation to individual assets and correction for multiple
-testing; when the sequence models are permitted to select their own
-regularisation on held-out data, all four discard the predictors entirely and
-forecast a constant. The conditional variance behaves differently, with all
-three GARCH specifications beating a rolling-variance benchmark decisively.
-Decomposing the gain in log predictive density over a null forecast, the
-conditional variance contributes $54\%$ and the shape of the predictive
-distribution a further $45\%$, while the conditional mean contributes $0.7\%$.
+We report four findings. First, the proposed model attains the best logarithmic
+score and CRPS among all specifications considered, improving on a
+ridge-plus-GARCH benchmark by $0.126$ nats ($p<0.00001$), and reduces mean
+absolute interval-coverage error to $0.022$ from $0.030$. Second, partial pooling
+yields calibrated intervals for an asset with no estimation history at all,
+attaining $87\%$ coverage at the $90\%$ nominal level and a logarithmic score
+within $0.005$ nats of the same model estimated with that asset included. Third,
+decomposing the gain in predictive density over a null forecast locates its
+source: the conditional variance contributes $54\%$ and the shape of the
+predictive distribution a further $45\%$, while the conditional mean contributes
+$0.7\%$---detectable at $p=0.029$ and economically negligible. Fourth,
+consistent with \citet{welch2008comprehensive} and \citet{timmermann2008elusive},
+no specification improves on a per-ticker historical average for the conditional
+mean, a result that survives disaggregation to individual assets and correction
+for multiple testing, and which is precisely why modelling effort at this horizon
+is better directed at the second moment and the distributional shape.
 
 We also document a failure mode that is silent rather than merely severe.
-Standardising non-stationary macroeconomic levels on a fixed origin sends
-held-out inputs far outside the range seen in estimation, and every model with
-an unbounded output head extrapolates along them, producing out-of-sample $R^2$
-as low as $-10\,425\%$ with no exception raised and no implausible training
+Standardising non-stationary macroeconomic levels on a fixed estimation origin
+sends held-out inputs far outside the range seen in estimation, and every model
+with an unbounded output head extrapolates along them, producing out-of-sample
+$R^2$ as low as $-10\,425\%$ with no exception raised and no implausible training
 diagnostic. Because the defect is detectable only by auditing predictor
 distributions across splits and the scale of the predictions themselves, both
 audits are released with the code.

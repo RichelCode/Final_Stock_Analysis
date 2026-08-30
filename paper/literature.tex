@@ -48,7 +48,7 @@ A third limitation is less often discussed and is central to this paper. Because
 these models are typically reported at a single regularisation setting chosen by
 the author rather than selected on held-out data, it is difficult to distinguish
 a model that has found signal from one that has fitted noise. Section
-\ref{sec:neural} shows that the distinction is decisive here.
+\ref{sec:mean} shows that the distinction is decisive here.
 
 \subsection{Bayesian inference and uncertainty quantification}
 
@@ -91,7 +91,7 @@ permanently across a monetary regime change. Standardising such a series on a
 fixed estimation window and applying the transformation to a later window
 produces inputs far outside the range the estimator has seen, and any model with
 an unbounded output head extrapolates along them. Section
-\ref{sec:extrapolation} documents the consequences and the repair.
+\ref{sec:pitfall} documents the consequences and the repair.
 
 \subsection{Hybrid architectures and the remaining gap}
 
