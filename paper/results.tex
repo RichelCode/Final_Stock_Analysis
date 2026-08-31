@@ -15,8 +15,8 @@ attains the best logarithmic score and the best continuous ranked probability
 score among all specifications considered, and the margins are large relative to
 their standard errors.
 
-Against a ridge-plus-GARCH benchmark---itself a strong competitor, since it
-carries the same conditional variance and a tuned conditional mean---the model
+Against a ridge-plus-GARCH benchmark, itself a strong competitor since it
+carries the same conditional variance and a tuned conditional mean, the model
 improves the mean log predictive density from $2.3516$ to $2.4777$, a gain of
 $0.126$ nats with $\mathrm{DM}=-5.51$ ($p<0.00001$). Against a zero-mean
 forecast with the same GARCH scale the gain is $0.128$ nats ($p<0.00001$), and
@@ -35,7 +35,7 @@ the distribution: it over-covers the $50\%$ interval by more than seven
 percentage points.
 
 Figure~\ref{fig:pit} shows why. The Gaussian probability integral transform is
-visibly hump-shaped, with excess mass near the centre---the signature of a
+visibly hump-shaped, with excess mass near the centre, the signature of a
 thin-tailed density fitted to fat-tailed returns, which widens everywhere to
 accommodate occasional large moves. Student-$t$ innovations with a
 validation-calibrated scale flatten it substantially, reducing the
@@ -82,9 +82,9 @@ macroeconomic conditioning materially improves density forecasts, which it does
 not.
 
 This decomposition is the empirical justification for the model's design. It is
-why the specification devotes its structure to the scale---a GARCH forecast
+why the specification devotes its structure to the scale (a GARCH forecast
 entering as a known observation scale, Student-$t$ innovations, a calibrated
-scale factor---and treats the conditional mean parsimoniously, with a horseshoe
+scale factor) and treats the conditional mean parsimoniously, with a horseshoe
 prior that shrinks weak coefficients rather than a flexible functional form.
 
 \subsection{Forecasting an asset with no estimation history}
@@ -97,8 +97,8 @@ distribution, which adds $\tau_\alpha^2$ to the predictive variance.
 
 Table~\ref{tab:transfer} reports leave-one-ticker-out performance. An asset
 entirely excluded from estimation attains a mean log score of $2.4727$ against
-$2.4777$ for the same model estimated with that asset included---a gap of
-$0.005$ nats---and retains $87\%$ coverage at the $90\%$ nominal level. Per
+$2.4777$ for the same model estimated with that asset included, a gap of
+$0.005$ nats, and retains $87\%$ coverage at the $90\%$ nominal level. Per
 ticker the log score ranges from $1.896$ for TSLA, the most volatile asset in
 the panel, to $2.862$ for MSFT, the least.
 
@@ -133,8 +133,8 @@ compete for it, not a tradable signal.
 
 Placing selection inside the posterior also avoids a specific hazard. Screening
 predictors by their correlation with the target on the estimation
-sample---common practice, and used in an earlier version of this
-work---preferentially selects trending series, because a trending regressor
+sample, which is common practice and was used in an earlier version of this
+work, preferentially selects trending series, because a trending regressor
 correlates with almost any target over a multi-year window. Those are precisely
 the series Section~\ref{sec:pitfall} shows to be destructive.
 
@@ -187,7 +187,7 @@ report, and the predictive distribution is where the remaining value lies.
 The sequence-model result deserves one further remark, because it is stronger
 than underperformance. Given free choice of regularisation on validation data,
 all four architectures select the strongest available penalty and collapse to a
-constant---they decline to use the predictors at all. The selected penalty sits
+constant: they decline to use the predictors at all. The selected penalty sits
 at the top of the search grid, which would ordinarily indicate too narrow a
 search; here it does not, because forecast dispersion has already reached zero
 and no larger penalty can change it. The finding is conditional on this

@@ -17,7 +17,7 @@ margin. A second limitation concerns the conditional mean itself. In a
 comprehensive out-of-sample audit, \citet{welch2008comprehensive} found that most
 proposed return predictors fail to improve upon the historical average, and
 \citet{timmermann2008elusive} characterised return predictability as local and
-episodic---present in short-lived pockets rather than as a stable population
+episodic, present in short-lived pockets rather than as a stable population
 property. Forecast combination offers partial insurance against this instability
 \citep{rapach2010out}, but the collective evidence establishes a demanding
 baseline: any gain claimed for a more elaborate model must survive genuine
@@ -37,7 +37,7 @@ methods miss. For sequence models, the LSTM architecture
 \citep{hochreiter1997long} was shown by \citet{fischer2018deep} to outperform
 random forests and logistic regression in classifying daily S\&P~500 constituent
 returns, although the documented profitability of the strategy declined in later
-subperiods---an instability consistent with the pocketed predictability described
+subperiods, an instability consistent with the pocketed predictability described
 above. Subsequent applied work has extended these architectures with
 macroeconomic inputs and hybrid convolutional--recurrent designs
 \citep{latif2025integrating}. Two limitations recur throughout this literature:
@@ -61,8 +61,8 @@ time series model, in which local linear trends, seasonal components and
 spike-and-slab selection over a candidate pool of predictors jointly capture
 contemporaneous correlation across target series while guarding against
 overfitting. In the return-predictability setting specifically, Bayesian
-treatments of model uncertainty---averaging over predictor subsets rather than
-conditioning on a single specification---were shown by \citet{avramov2002stock}
+treatments of model uncertainty, averaging over predictor subsets rather than
+conditioning on a single specification, were shown by \citet{avramov2002stock}
 and \citet{cremers2002stock} to improve out-of-sample performance precisely
 because no individual model is reliably correct. Closer to the present study,
 \citet{chandra2021bayesian} apply Bayesian neural networks to multi-step stock
@@ -85,8 +85,8 @@ A strand of the machine learning literature that has had limited uptake in
 empirical finance concerns dataset shift: the case in which the joint
 distribution of predictors and target differs between estimation and deployment
 \citep{quinonero2009dataset}. The concern is directly relevant here, because the
-macro-financial variables most commonly used to condition equity forecasts---an
-index level, a policy rate, a yield---are precisely the series whose means move
+macro-financial variables most commonly used to condition equity forecasts, namely an
+index level, a policy rate or a yield, are precisely the series whose means move
 permanently across a monetary regime change. Standardising such a series on a
 fixed estimation window and applying the transformation to a later window
 produces inputs far outside the range the estimator has seen, and any model with

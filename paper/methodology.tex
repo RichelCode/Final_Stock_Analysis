@@ -7,7 +7,7 @@
 \label{sec:data}
 
 The sample is a balanced daily panel of eight large-capitalisation United States
-technology equities---AAPL, MSFT, AMZN, GOOGL, META, NVDA, TSLA and ORCL---from
+technology equities (AAPL, MSFT, AMZN, GOOGL, META, NVDA, TSLA and ORCL) from
 2 March 2016 to 29 December 2025. Adjusted closing prices are obtained from
 Yahoo Finance and macro-financial series from the Federal Reserve Economic Data
 service: the effective federal funds rate (DFF), the ten-year Treasury constant
@@ -48,7 +48,7 @@ relation that survives is required to survive a change in monetary regime.
 
 Model inputs are declared explicitly rather than inferred from column type. This
 is a substantive design choice, not bookkeeping. Selecting every numeric column
-admits level series---an index level, a policy rate---whose mean moves
+admits level series, such as an index level or a policy rate, whose mean moves
 permanently between the training and test blocks. Standardised on training
 moments and applied to the test block, such a series arrives at a magnitude the
 estimator has never seen, and any model with an unbounded linear output
@@ -227,7 +227,7 @@ assessed by the \citet{diebold1995comparing} test on per-observation loss
 differentials, using a Newey--West heteroskedasticity- and
 autocorrelation-consistent variance because daily loss differentials are
 serially correlated, together with the small-sample correction of
-\citet{harvey1997testing}. Where a family of tests is reported---one per
-model--ticker pair---significance is additionally assessed after
+\citet{harvey1997testing}. Where a family of tests is reported, one per
+model--ticker pair, significance is additionally assessed after
 Benjamini--Hochberg and Bonferroni correction, since at conventional levels a
 handful of rejections among dozens of tests is what chance alone produces.

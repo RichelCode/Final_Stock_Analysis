@@ -9,7 +9,7 @@ near-zero policy rates, the COVID-19 market dislocation of March 2020, the most
 rapid monetary tightening cycle since the early 1980s beginning in 2022, and the
 partial normalisation of rates that followed. These episodes produced pronounced
 volatility clustering, heavy-tailed daily returns, and repeated shifts in the
-joint distribution of returns and macroeconomic state variables---features long
+joint distribution of returns and macroeconomic state variables, features long
 documented as stylised facts of asset returns \citep{cont2001empirical}. Such
 conditions are hostile to forecasting models estimated under an assumption of
 covariance stationarity, and they reproduce at the level of a portfolio a
@@ -38,8 +38,8 @@ the forecasting model and how the resulting predictive uncertainty should be
 quantified.
 
 This paper approaches that question constructively. Most practical uses of a
-return forecast---setting a risk limit, sizing a position, pricing an
-option---require a predictive \emph{distribution} rather than a point estimate,
+return forecast, such as setting a risk limit, sizing a position or pricing
+an option, require a predictive \emph{distribution} rather than a point estimate,
 yet the forecasting literature is dominated by evaluations of conditional-mean
 accuracy. We develop a model that supplies a calibrated distribution, and we
 establish which of its components does the work.
@@ -60,9 +60,9 @@ conditional in closed form.
 The evaluation is a controlled comparison on a balanced panel of eight large-cap
 technology stocks over 2016--2025, with the effective federal funds rate, the
 ten-year Treasury yield, the VIX and a market proxy as macro-financial
-conditioning information. Competing specifications---naive baselines, pooled
+conditioning information. Competing specifications (naive baselines, pooled
 ridge, a pooled random forest, three GARCH-family volatility models and four
-sequence architectures---are estimated on an identical feature set and scored on
+sequence architectures) are estimated on an identical feature set and scored on
 a strictly held-out window spanning the tightening cycle and its aftermath.
 Point accuracy is assessed by root mean squared error and out-of-sample $R^2$;
 probabilistic adequacy by logarithmic score, continuous ranked probability score
@@ -79,7 +79,7 @@ within $0.005$ nats of the same model estimated with that asset included. Third,
 decomposing the gain in predictive density over a null forecast locates its
 source: the conditional variance contributes $54\%$ and the shape of the
 predictive distribution a further $45\%$, while the conditional mean contributes
-$0.7\%$---detectable at $p=0.029$ and economically negligible. Fourth,
+$0.7\%$, detectable at $p=0.029$ and economically negligible. Fourth,
 consistent with \citet{welch2008comprehensive} and \citet{timmermann2008elusive},
 no specification improves on a per-ticker historical average for the conditional
 mean, a result that survives disaggregation to individual assets and correction

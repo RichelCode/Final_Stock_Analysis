@@ -19,7 +19,7 @@ included.
 
 Decomposing the gain over a null forecast locates its source. The conditional
 variance contributes $54\%$ and the shape of the predictive distribution a
-further $45\%$, while the conditional mean contributes $0.7\%$---statistically
+further $45\%$, while the conditional mean contributes $0.7\%$, statistically
 detectable and economically negligible. The last figure is consistent with the
 out-of-sample evidence of \citet{welch2008comprehensive} and the episodic
 predictability of \citet{timmermann2008elusive}, which our own point-accuracy
@@ -44,7 +44,7 @@ that nothing distinguishes them.
 \textbf{Test differences rather than ranking them.} Several apparent orderings
 in this study dissolve under testing: EGARCH's QLIKE advantage over GARCH
 ($p=0.33$), the single per-ticker rejection that fails multiplicity correction,
-and---in an earlier version of this pipeline---an entire ranking of volatility
+and, in an earlier version of this pipeline, an entire ranking of volatility
 models produced by a diverged fit.
 
 \textbf{Separate statistical from economic significance.} The conditional mean's
@@ -97,10 +97,10 @@ general feature of the asset class.
 \subsection{Reproducibility}
 
 All data are public: prices from Yahoo Finance, macro-financial series from the
-Federal Reserve Economic Data service. The full pipeline---panel construction,
+Federal Reserve Economic Data service. The full pipeline (panel construction,
 feature dictionary, volatility estimation, the Bayesian sampler, both evaluation
 protocols, all scoring rules and every figure and table in this
-paper---is released with pinned dependencies. Two audit scripts are included
+paper) is released with pinned dependencies. Two audit scripts are included
 that exit non-zero when they detect the predictor-drift and prediction-scale
 failures described in Section~\ref{sec:pitfall}, so that the defect which
 invalidated the earlier analysis cannot recur silently.
